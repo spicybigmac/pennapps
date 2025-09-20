@@ -4,16 +4,29 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import React from 'react';
 import AuthNav from './auth';
+import { useAuth } from '../hooks/useAuth';
+
+interface NavItem {
+  href: string;
+  label: string;
+  icon?: string;
+}
 
 const Sidebar = () => {
   const pathname = usePathname();
+  const { user, hasRole } = useAuth();
 
-  const navItems = [
+  const navItems: NavItem[] = [
     { href: '/', label: 'Dashboard' },
     { href: '/analyze', label: 'Gemini' },
     { href: '/reports', label: 'Reports' },
     { href: '/profile', label: 'Profile' },
   ];
+
+  // Add clearances only for logged-in users with top-secret clearance
+  if (user && hasRole('top-secret')) {
+    navItems.push({ href: '/clearances', label: 'Clearances' });
+  }
 
   return (
     <div className="w-64 bg-black text-white h-screen p-6 flex flex-col border-r border-gray-800">
@@ -31,6 +44,7 @@ const Sidebar = () => {
                 : 'text-gray-400 hover:bg-gray-900 hover:text-white'
             }`}
           >
+            {item.icon && <span className="mr-2">{item.icon}</span>}
             {item.label}
           </Link>
         ))}

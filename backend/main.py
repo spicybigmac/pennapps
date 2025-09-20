@@ -4,7 +4,7 @@ from pydantic import BaseModel
 from contextlib import asynccontextmanager
 import uvicorn
 import dotenv
-dotenv.load_dotenv()
+dotenv.load_dotenv("backend/.env")
 
 from api_routes import mongodb
 # Import routers
