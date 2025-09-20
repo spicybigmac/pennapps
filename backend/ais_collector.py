@@ -375,5 +375,5 @@ async def collect_ais_data(api_key: str, days_back: int = 7):
 
 if __name__ == "__main__":
     # Example usage
-    api_key = os.getenv("GFW_API_KEY", "your_api_key_here")
+    api_key = os.getenv("GFW_API_KEY")
     asyncio.run(collect_ais_data(api_key))
