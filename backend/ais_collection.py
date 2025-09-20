@@ -1,17 +1,40 @@
-import asyncio
-import aiohttp
-import logging
-import json
-from datetime import datetime, timedelta
-from typing import List, Dict, Optional, Any
+import dotenv
+dotenv.load_dotenv("backend/.env")
+dotenv.load_dotenv()
+
 import os
-from pathlib import Path
+import requests
 
-# Import our MongoDB functions
-from api_routes import mongodb
+import requests
 
-logging.basicConfig(level=logging.INFO)
-logger = logging.getLogger(__name__)
+url = "https://gateway.api.globalfishingwatch.org/v3/4wings/report"
 
+params = {
+    "spatial-resolution": "HIGH",
+    "temporal-resolution": "HOURLY",
+    "datasets[0]": "public-global-sar-presence:latest",
+    "date-range": "2025-09-01,2025-09-29",
+    "format": "JSON",
+    "group-by": ""
+}
 
+headers = {
+    "Authorization": f"Bearer {os.getenv('GFW_API_KEY')}",
+    "Content-Type": "application/json"
+}
+s
+data = {
+    "region": {
+        "dataset": "public-eez-areas",
+        "id": 8465
+    }
+}
 
+response = requests.post(url, headers=headers, params=params, json=data)
+
+with open("fishingtest.csv", "w") as f:
+    for value in response.json()['entries']:
+        f.write(str(value)+"\n")
+        # print(value["registryInfo"][0]["shipname"])
+
+# python3 backend/fishingtest.py
