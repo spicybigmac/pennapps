@@ -1,0 +1,16 @@
+{
+  "completed_months": [
+    1,
+    2,
+    3,
+    4,
+    5
+  ],
+  "total_vessels_collected": 0,
+  "start_time": "2025-09-20T21:25:53.704222",
+  "collection_stats": {
+    "total_matched_vessels": 0,
+    "total_unmatched_vessels": 0,
+    "total_requests_made": 10
+  }
+}
