@@ -39,8 +39,6 @@ const HomePage: React.FC = () => {
 
         // Graticules
         showGraticules={true}
-        graticuleColor={() => 'rgba(255, 255, 255, 0.5)'}
-        graticuleLineResolution={20}
       />
     </div>
   );
