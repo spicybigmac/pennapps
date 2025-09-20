@@ -19,6 +19,17 @@ export type AgentPanelProps = {
 
 type StepState = 'pending' | 'active' | 'done';
 
+type ExaResult = {
+  url: string;
+  text: string;
+};
+
+type GeminiResponseData = {
+  summaries: string[];
+  agent_message: string;
+  legal_basis: { title: string; summary: string; citation: string; url: string }[];
+};
+
 export default function AgentPanel({ open, point, onClose }: AgentPanelProps) {
   const [showSummary, setShowSummary] = useState(false);
   const [showLaws, setShowLaws] = useState(false);
@@ -28,7 +39,7 @@ export default function AgentPanel({ open, point, onClose }: AgentPanelProps) {
   // New states for API fetching
   const [agentResponse, setAgentResponse] = useState<string | null>(null);
   const [isLoadingAgentResponse, setIsLoadingAgentResponse] = useState(false);
-  const [relevantLaws, setRelevantLaws] = useState<string[]>([]);
+  const [relevantLaws, setRelevantLaws] = useState<{ title: string; summary: string; citation:string; url: string }[]>([]);
 
   useEffect(() => {
     if (!open || !point) {
@@ -49,23 +60,24 @@ export default function AgentPanel({ open, point, onClose }: AgentPanelProps) {
       setShowSummary(true); // Show summary immediately
       setSteps(['active', 'pending', 'pending', 'pending', 'pending']); // Step 1 active
 
+      setShowLaws(false);
+      setRelevantLaws([]);
+
       try {
         // Step 1: Exa Search Request for laws and regulations
-        // Update: This step is now represented by fetching actual laws
         const exaSearchQuery = `maritime laws and regulations at latitude ${point.lat.toFixed(2)}, longitude ${point.lng.toFixed(2)}`;
         const exaResponse = await fetch("http://127.0.0.1:8000/api/ai/exa/search", {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ query: exaSearchQuery, num_results: 3 }), // Limit results for brevity
         });
-        const exaData = await exaResponse.json();
+        const exaData: { results: ExaResult[] } = await exaResponse.json();
 
-        let fetchedLaws: string[] = [];
+        let fetchedExaResults: ExaResult[] = [];
         if (exaData && exaData.results && exaData.results.length > 0) {
-          fetchedLaws = exaData.results.map((result: any) => result.text || result.url);
+          fetchedExaResults = exaData.results;
         }
-        setRelevantLaws(fetchedLaws);
-        setShowLaws(true); // Show legal basis after fetching
+        
         setSteps(['done', 'active', 'pending', 'pending', 'pending']); // Step 1 done, Step 2 active
 
         // Introduce a slight delay for visual progression (mimicking old timers)
@@ -73,20 +85,47 @@ export default function AgentPanel({ open, point, onClose }: AgentPanelProps) {
 
         // Step 2: Gemini Chat Request for agent's response
         const chatPrompt = `An unregistered vessel (ID: ${point.id}) is located at latitude ${point.lat.toFixed(4)}, longitude ${point.lng.toFixed(4)}. It is currently ${point.isfishing ? 'fishing' : 'not fishing'}.
-        Based on the following maritime laws and regulations:
-        ${fetchedLaws.length > 0 ? fetchedLaws.join('\n\n') : 'No specific laws and regulations found.'}
+        Based on the following maritime laws and regulations from Exa AI search results:
+        ${fetchedExaResults.length > 0 ? fetchedExaResults.map(result => `${result.url}`).join('\n') : 'No specific laws and regulations found.'}
 
-        Please simulate an agent's response to this unregistered vessel. The response should be informative, authoritative, and suggest appropriate actions or warnings.`;
+        Please simulate an agent's response to this unregistered vessel. The response should be informative, authoritative, and suggest appropriate actions or warnings.
+        Additionally, provide a summary for each of the three Exa search results.
+        Your entire response must be in JSON format only, with no other formatting. Do not use Markdown within the JSON.
+        The JSON should contain:
+        - "agent_message": a single string for the agent's full message.
+        - "legal_basis": a list of objects, where each object has:
+          - "title" (string, a short encompassing title for the source)
+          - "summary" (string, a summary of the Exa results' laws which are relevant to the unregistered vessel in at most three sentences), 
+          - "citation" (string, an APA in-text citation for the source), and 
+          - "url" (string, the original URL from Exa).
+
+        Example JSON format:
+        {
+          "agent_message": "This is the agent's authoritative message.",
+          "legal_basis": [
+            { "title": "Example 1", "summary": "Summary of Law 1.", "citation": "(Example1, 2025)", "url": "http://example.com/law1" },
+            { "title": "Example 2", "summary": "Summary of Law 2.", "citation": "(Example2, 2025)", "url": "http://example.com/law2" },
+            { "title": "Example 3", "summary": "Summary of Law 3.", "citation": "(Example3, 2025)", "url": "http://example.com/law3" }
+          ]
+        }`;
 
         const geminiResponse = await fetch("http://127.0.0.1:8000/api/ai/gemini/chat", {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ prompt: chatPrompt, user_id: point.id}),
         });
-        const geminiData = await geminiResponse.json();
 
-        if (geminiData && geminiData.response) {
-          setAgentResponse(geminiData.response);
+        if(!geminiResponse.ok){
+          const errorData = await geminiResponse.json();
+          throw new Error(errorData.detail || 'The link could not be processed.');
+        }
+
+        const geminiData: GeminiResponseData = await geminiResponse.json();
+
+        if (geminiData) {
+          setAgentResponse(geminiData["agent_message"]);
+          setRelevantLaws(geminiData["legal_basis"]);
+          setShowLaws(true); // Show legal basis after fetching
         } else {
           setAgentResponse("Failed to get a response from the agent.");
         }
@@ -116,9 +155,6 @@ export default function AgentPanel({ open, point, onClose }: AgentPanelProps) {
 
     // No need for a return cleanup with `timers` as the fetch is handled by `fetchData`'s lifecycle
   }, [open, point]);
-
-  // Removed useMemo for 'laws' as we are now fetching them dynamically
-  // The 'laws' displayed in the Legal Basis section will now come from `relevantLaws` state
 
   const StepIcon = ({ state }: { state: StepState }) => {
     if (state === 'active') {
@@ -192,33 +228,6 @@ export default function AgentPanel({ open, point, onClose }: AgentPanelProps) {
             </div>
           )}
 
-          {/* Legal Basis */}
-          <div
-            className="border border-gray-900 rounded-lg p-4 bg-black/60 anim-slide-up"
-            style={{
-              opacity: showLaws ? 1 : 0,
-              transition: 'opacity 240ms ease',
-            }}
-          >
-            <div className="text-sm font-semibold mb-2">Legal Basis (via Exa AI)</div>
-            <div className="flex flex-wrap gap-1">
-              {relevantLaws.length > 0 ? (
-                relevantLaws.map((law, index) => (
-                  // Assuming laws can be just text, if they are URLs, you'd need to parse them
-                  <span
-                    key={index}
-                    className="text-[10px] px-2.5 py-1 rounded-full border border-gray-800 text-gray-300"
-                  >
-                    {law.length > 50 ? law.substring(0, 50) + '...' : law}
-                  </span>
-                ))
-              ) : (
-                <span className="text-xs text-gray-500">No specific laws and regulations found.</span>
-              )}
-            </div>
-            {relevantLaws.length > 0 && <div className="mt-2 text-[10px] text-gray-500">Full text/URL in agent log</div>}
-          </div>
-
           {/* Dispatch Workflow */}
           <div className="border border-gray-900 rounded-lg p-4 bg-black/60">
             <div className="text-sm font-semibold mb-2">Dispatch Workflow</div>
@@ -244,6 +253,32 @@ export default function AgentPanel({ open, point, onClose }: AgentPanelProps) {
                 <span>Agent log saved to MongoDB database and sent to pattern recognition model</span>
               </li>
             </ol>
+          </div>
+
+          {/* Legal Basis */}
+          <div
+            className="border border-gray-900 rounded-lg p-4 bg-black/60 anim-slide-up"
+            style={{
+              opacity: showLaws ? 1 : 0,
+              transition: 'opacity 240ms ease',
+            }}
+          >
+            <div className="text-sm font-semibold mb-2">Legal Basis</div>
+            <div className="flex flex-wrap gap-1">
+              {relevantLaws ? (
+                relevantLaws.map((law, index) => (
+                  <div key={index} className="text-[10px] px-2.5 py-1 rounded-lg border border-gray-800 text-gray-300 hover:text-white hover:border-blue-500 transition-colors"> 
+                    <p>
+                      <div className="text-[12px] font-semibold">{law.title}</div>
+                      {law.summary} {law.citation} <br></br>
+                      <a href={law.url} className="text-blue-300">source</a>
+                    </p>
+                  </div>
+                ))
+              ) : (
+                <span className="text-xs text-gray-500">No specific laws and regulations found.</span>
+              )}
+            </div>
           </div>
 
           {/* Agent Response */}
