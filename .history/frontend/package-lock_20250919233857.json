@@ -44,19 +44,6 @@
         "url": "https://github.com/sponsors/sindresorhus"
       }
     },
-    "node_modules/@auth0/auth0-react": {
-      "version": "2.5.0",
-      "resolved": "https://registry.npmjs.org/@auth0/auth0-react/-/auth0-react-2.5.0.tgz",
-      "integrity": "sha512-o2nuJ85D4ESRybh3zbA5Dl1Oe17fRZL+/Q17b1qQdS+0QWZrXTEzTMD0wb0tYGST5rJb8rt7pVh6Tj4cWhdTCQ==",
-      "license": "MIT",
-      "dependencies": {
-        "@auth0/auth0-spa-js": "^2.4.1"
-      },
-      "peerDependencies": {
-        "react": "^16.11.0 || ^17 || ^18 || ^19",
-        "react-dom": "^16.11.0 || ^17 || ^18 || ^19"
-      }
-    },
     "node_modules/@auth0/auth0-spa-js": {
       "version": "2.4.1",
       "resolved": "https://registry.npmjs.org/@auth0/auth0-spa-js/-/auth0-spa-js-2.4.1.tgz",
