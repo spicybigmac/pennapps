@@ -55,7 +55,12 @@ export default function AgentPanel({ open, point, onClose }: AgentPanelProps) {
     schedule.forEach((t, i) => {
       timers.push(window.setTimeout(() => advance(i), 900 + t));
     });
-    timers.push(window.setTimeout(() => setCompleted(true), 900 + schedule[schedule.length - 1] + 1400));
+    timers.push(
+      window.setTimeout(() => {
+        setSteps(['done', 'done', 'done', 'done', 'done']);
+        setCompleted(true);
+      }, 900 + schedule[schedule.length - 1] + 1400)
+    );
 
     return () => {
       timers.forEach((id) => window.clearTimeout(id));
@@ -217,6 +222,16 @@ export default function AgentPanel({ open, point, onClose }: AgentPanelProps) {
             </p>
           </div>
         </div>
+      </div>
+      {/* Bottom action bar */}
+      <div className="border-t border-gray-900 bg-black px-4 py-3">
+        <button
+          onClick={onClose}
+          disabled={!completed}
+          className="w-full text-sm font-medium rounded-lg px-4 py-2 transition-colors disabled:bg-black disabled:text-gray-600 disabled:border-gray-800 bg-white text-black hover:bg-gray-200"
+        >
+          {completed ? 'Complete' : 'Processing...'}
+        </button>
       </div>
     </div>
   );
