@@ -15,7 +15,7 @@ const HomePage: React.FC = () => {
   }, []);
 
   return (
-    <div style={{ width: '100vw', height: '100vh', overflow: 'hidden' }}>
+    <div className="flex-1 relative">
       <Globe
         ref={globeEl}
         globeImageUrl="//unpkg.com/three-globe/example/img/earth-night.jpg"
@@ -25,6 +25,8 @@ const HomePage: React.FC = () => {
         hexPolygonResolution={3}
         hexPolygonMargin={0.7}
         hexPolygonColor={() => `rgba(255, 255, 255, 0.8)`}
+        width={window.innerWidth - 256} // HACK: Subtract sidebar width
+        height={window.innerHeight}
       />
     </div>
   );

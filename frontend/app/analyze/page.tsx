@@ -79,7 +79,7 @@ export default function AnalyzePage() {
   return (
     <div className="flex h-screen bg-black text-white font-sans">
       {/* Left Panel - Analysis Chat */}
-      <div className="flex-1 flex flex-col border-r border-gray-800">
+      <div className="w-1/2 flex flex-col border-r border-gray-800 h-screen">
         {/* Header */}
         <div className="p-4 border-b border-gray-800">
           <h1 className="text-2xl font-semibold">Expansi Analysis Center</h1>
@@ -155,7 +155,7 @@ export default function AnalyzePage() {
       </div>
 
       {/* Right Panel - Mapbox Placeholder */}
-      <div className="flex-1 bg-black/50 relative">
+      <div className="w-1/2 bg-black/50 relative">
         <div className="absolute inset-0 flex items-center justify-center">
           <div className="text-center p-8 bg-black/50 rounded-lg border border-gray-800">
             <div className="w-16 h-16 bg-gray-900 rounded-lg mx-auto mb-4 flex items-center justify-center">
