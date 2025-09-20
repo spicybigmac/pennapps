@@ -8,3 +8,4 @@ google
 exa-py
 python-multipart
 apscheduler
+aiohttp
