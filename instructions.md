@@ -1,4 +1,4 @@
-# Expansi: The AI Layer for Sustainable Seas
+# Expansi: The AI Layer for Sustainable Seas!
 
 **Mission:**  
 Detect and flag illegal, unreported, and unregulated (IUU) fishing and maritime pollution by fusing AIS, satellite, and ocean data. Deliver actionable alerts to authorities.
