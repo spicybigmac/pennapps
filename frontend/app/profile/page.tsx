@@ -74,7 +74,7 @@ export default function Profile() {
                 </div>
               </div>
             )}
-            {user.permissions && user.permissions.length > 0 && (
+            {/* {user.permissions && user.permissions.length > 0 && (
               <div>
                 <label className="text-gray-400 text-sm">Permissions</label>
                 <div className="flex flex-wrap gap-2 mt-1">
@@ -88,7 +88,7 @@ export default function Profile() {
                   ))}
                 </div>
               </div>
-            )}
+            )} */}
             {user.picture && (
               <div>
                 <label className="text-gray-400 text-sm">Profile Picture</label>

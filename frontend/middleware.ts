@@ -22,8 +22,9 @@ export async function middleware(request: NextRequest) {
       loginUrl.searchParams.set('client_id', clientId);
       loginUrl.searchParams.set('response_type', 'code');
       loginUrl.searchParams.set('redirect_uri', `${baseUrl}/auth/callback`);
-      loginUrl.searchParams.set('scope', 'openid profile email');
+      loginUrl.searchParams.set('scope', 'openid profile email read:current_user');
       loginUrl.searchParams.set('state', 'random-state');
+      loginUrl.searchParams.set('audience', `https://${auth0Domain}/api/v2/`);
       
       return NextResponse.redirect(loginUrl);
     }
@@ -51,20 +52,105 @@ export async function middleware(request: NextRequest) {
     }
     
     if (request.nextUrl.pathname === '/auth/callback') {
-      // Handle Auth0 callback - for now, just redirect to home
-      // In a real implementation, you'd exchange the code for tokens
+      // Handle Auth0 callback - exchange code for tokens
       console.log('Auth callback received');
-      const response = NextResponse.redirect(new URL('/', request.url));
       
-      // For demo purposes, set a simple session cookie
-      response.cookies.set('appSession', 'demo-user', {
-        httpOnly: true,
-        secure: process.env.NODE_ENV === 'production',
-        sameSite: 'lax',
-        maxAge: 60 * 60 * 24 * 7 // 7 days
-      });
+      const code = request.nextUrl.searchParams.get('code');
+      const state = request.nextUrl.searchParams.get('state');
       
-      return response;
+      if (!code) {
+        return NextResponse.redirect(new URL('/?error=no_code', request.url));
+      }
+      
+      try {
+        // Exchange code for tokens
+        const tokenResponse = await fetch(`https://${process.env.AUTH0_DOMAIN}/oauth/token`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            grant_type: 'authorization_code',
+            client_id: process.env.AUTH0_CLIENT_ID,
+            client_secret: process.env.AUTH0_CLIENT_SECRET,
+            code: code,
+            redirect_uri: `${process.env.AUTH0_BASE_URL}/auth/callback`,
+          }),
+        });
+        
+        const tokens = await tokenResponse.json();
+        
+        if (tokens.access_token) {
+          // Get user info from Auth0
+          const userResponse = await fetch(`https://${process.env.AUTH0_DOMAIN}/userinfo`, {
+            headers: {
+              'Authorization': `Bearer ${tokens.access_token}`,
+            },
+          });
+          
+          const userInfo = await userResponse.json();
+          
+          // Get user roles from Auth0 Management API
+          let userRoles = [];
+          try {
+            // First, get a Management API token
+            const mgmtTokenResponse = await fetch(`https://${process.env.AUTH0_DOMAIN}/oauth/token`, {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+              },
+              body: JSON.stringify({
+                grant_type: 'client_credentials',
+                client_id: process.env.AUTH0_CLIENT_ID,
+                client_secret: process.env.AUTH0_CLIENT_SECRET,
+                audience: `https://${process.env.AUTH0_DOMAIN}/api/v2/`,
+              }),
+            });
+            
+            const mgmtTokens = await mgmtTokenResponse.json();
+            
+            if (mgmtTokens.access_token) {
+              // Get user roles using Management API
+              const rolesResponse = await fetch(`https://${process.env.AUTH0_DOMAIN}/api/v2/users/${userInfo.sub}/roles`, {
+                headers: {
+                  'Authorization': `Bearer ${mgmtTokens.access_token}`,
+                },
+              });
+              
+              if (rolesResponse.ok) {
+                const rolesData = await rolesResponse.json();
+                userRoles = rolesData.map(role => role.name);
+                console.log('User roles from Management API:', userRoles);
+              }
+            }
+          } catch (error) {
+            console.error('Error fetching user roles:', error);
+          }
+          
+          // Store user info in session cookie
+          const response = NextResponse.redirect(new URL('/', request.url));
+          response.cookies.set('appSession', JSON.stringify({
+            user: {
+              ...userInfo,
+              roles: userRoles
+            },
+            accessToken: tokens.access_token,
+            idToken: tokens.id_token
+          }), {
+            httpOnly: true,
+            secure: process.env.NODE_ENV === 'production',
+            sameSite: 'lax',
+            maxAge: 60 * 60 * 24 * 7 // 7 days
+          });
+          
+          return response;
+        }
+      } catch (error) {
+        console.error('Auth callback error:', error);
+        return NextResponse.redirect(new URL('/?error=auth_failed', request.url));
+      }
+      
+      return NextResponse.redirect(new URL('/', request.url));
     }
     
     if (request.nextUrl.pathname === '/auth/profile') {

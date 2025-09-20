@@ -3,7 +3,7 @@ from pydantic import BaseModel
 from fastapi.middleware.cors import CORSMiddleware
 import uvicorn
 import dotenv
-dotenv.load_dotenv()
+dotenv.load_dotenv("/backend/.env")
 
 import mongodb
 
