@@ -42,6 +42,7 @@ const HomePage: React.FC = () => {
 
   // Auth state
   const { user, hasAnyRole } = useAuth();
+  const hasPrivateClearance = hasAnyRole(['confidential', 'secret', 'top-secret']);
 
   const markerSvg = `<svg viewBox="-4 0 36 36">
     <path fill="currentColor" d="M14,0 C21.732,0 28,5.641 28,12.6 C28,23.963 14,36 14,36 C14,36 0,24.064 0,12.6 C0,5.641 6.268,0 14,0 Z"></path>
@@ -265,7 +266,7 @@ const HomePage: React.FC = () => {
             
             if (d.count == 1) {
               setHoveredVessel(d.markers[0]);
-              if (!d.markers[0].registered && hasAnyRole(['confidential', 'secret', 'top-secret'])) {
+              if (!d.markers[0].registered && hasPrivateClearance) {
                 const now = new Date();
                 const ap: AgentPoint = {
                   id: d.markers[0].id,
@@ -431,7 +432,7 @@ const HomePage: React.FC = () => {
 
       {/* Agent Panel and Toast */}
       <AgentPanel open={isAgentPanelOpen} point={agentPoint} onClose={() => setIsAgentPanelOpen(false)} />
-      {showAgentToast && agentPoint && hasAnyRole(['confidential', 'secret', 'top-secret']) && (
+      {showAgentToast && agentPoint && hasPrivateClearance && (
         <AgentToast
           title="Unregistered Vessel Detected"
           subtitle={`${agentPoint.lat.toFixed(4)}°, ${agentPoint.lng.toFixed(4)}°, ${agentPoint.timestamp}`}
