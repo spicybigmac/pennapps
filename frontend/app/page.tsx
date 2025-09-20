@@ -28,6 +28,7 @@ const HomePage: React.FC = () => {
   const [vesselData, setVesselData] = useState<VesselData[]>([]);
   const [clusteredData, setClusteredData] = useState<ClusterData[]>([]);
   const [clusterThreshold, setClusterThreshold] = useState(0);
+  const [hoveredVessel, setHoveredVessel] = useState<VesselData | null>(null);
 
   const markerSvg = `<svg viewBox="-4 0 36 36">
     <path fill="currentColor" d="M14,0 C21.732,0 28,5.641 28,12.6 C28,23.963 14,36 14,36 C14,36 0,24.064 0,12.6 C0,5.641 6.268,0 14,0 Z"></path>
@@ -82,7 +83,7 @@ const HomePage: React.FC = () => {
           cluster.count++;
           cluster.markers.push(otherMarker);
           processed.add(otherIndex);
-          cluster.isfishing = cluster.isfishing || otherMarker.isfishing
+          cluster.legal = cluster.legal && otherMarker.legal
         }
       }
 
@@ -156,7 +157,7 @@ const HomePage: React.FC = () => {
   }, []);
 
   return (
-    <div style={{ width: '100vw', height: '100vh', overflow: 'hidden', backgroundColor: 'black' }}>
+    <div style={{ width: '100%', height: '100vh', position: 'relative', overflow: 'hidden' }}>
       <Globe
         ref={globeEl}
         globeImageUrl={null}
@@ -186,10 +187,34 @@ const HomePage: React.FC = () => {
             el.innerHTML = markerSvg;
           }
           
-          el.style.color = d.isfishing ? "red" : "green";
+          el.style.color = d.legal ? "green" : "red";
           el.style.width = d.count > 1 ? `40px` : `30px`; // Make clusters slightly larger
+          el.style.height = 'auto';
           el.style.transition = 'opacity 250ms';
           el.style.cursor = 'pointer';
+          el.style.pointerEvents = 'auto'; // Ensure pointer events work
+          
+          // Add click event handler for all markers
+          el.addEventListener('click', (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            
+            if (d.count == 1) {
+              // Handle single vessel click
+              setHoveredVessel(d.markers[0]);
+            }
+          });
+          
+          // Add hover event handlers
+          el.addEventListener('mouseenter', (e) => {
+            el.style.transform = 'scale(1.2)';
+            el.style.zIndex = '100';
+          });
+          
+          el.addEventListener('mouseleave', () => {
+            el.style.transform = 'scale(1)';
+            el.style.zIndex = '1';
+          });
           
           return el;
         }}
@@ -198,6 +223,56 @@ const HomePage: React.FC = () => {
         onGlobeReady={()=>{clusterMarkers(vesselData)}}
         onZoom={(pov) => {handleZoom(pov)}}
       />
+      
+      {/* Vessel information popup */}
+      {hoveredVessel && (
+        <div
+          style={{
+            position: 'absolute',
+            top: '20px',
+            right: '20px',
+            backgroundColor: 'rgba(0, 0, 0, 0.9)',
+            color: 'white',
+            padding: '16px 20px',
+            borderRadius: '8px',
+            fontSize: '14px',
+            fontFamily: 'Arial, sans-serif',
+            zIndex: 1000,
+            boxShadow: '0 4px 12px rgba(0, 0, 0, 0.3)',
+            border: '1px solid rgba(255, 255, 255, 0.2)',
+            maxWidth: '300px',
+            minWidth: '250px'
+          }}
+        >
+          <div style={{ fontWeight: 'bold', marginBottom: '12px', color: hoveredVessel.isfishing ? '#ff6b6b' : '#51cf66' }}>
+            Vessel Information
+          </div>
+          <div style={{ marginBottom: '8px' }}>
+            <strong>Location:</strong> {hoveredVessel.lat.toFixed(4)}°, {hoveredVessel.lng.toFixed(4)}°
+          </div>
+          <div style={{ marginBottom: '8px' }}>
+            <strong>Status:</strong> {hoveredVessel.isfishing ? 'Fishing' : 'Not Fishing'}
+          </div>
+          <div style={{ marginBottom: '8px' }}>
+            <strong>Registered:</strong> {hoveredVessel.legal ? 'Yes' : 'No'}
+          </div>
+          <button
+            onClick={() => setHoveredVessel(null)}
+            style={{
+              marginTop: '12px',
+              padding: '8px 16px',
+              backgroundColor: 'rgba(255, 255, 255, 0.1)',
+              color: 'white',
+              border: '1px solid rgba(255, 255, 255, 0.3)',
+              borderRadius: '4px',
+              cursor: 'pointer',
+              fontSize: '12px'
+            }}
+          >
+            Close
+          </button>
+        </div>
+      )}
     </div>
   );
 };
