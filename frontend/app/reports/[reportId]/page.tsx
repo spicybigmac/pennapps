@@ -269,7 +269,7 @@ const ReportDisplayPage = ({ params }: { params: Promise<{ reportId:string }> })
   if (!reportData) {
     return <div className="flex-1 p-8 text-white text-center">Loading report data...</div>;
   }
-
+  
   const successRateData = [{ name: 'Success Rate', value: reportData.agentPerformance.success_rate }];
 
   return (

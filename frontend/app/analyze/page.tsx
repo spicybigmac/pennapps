@@ -178,7 +178,7 @@ export default function AnalyzePage() {
       <div className={`w-1/2 flex flex-col border-r border-gray-900/60 h-screen`}> 
         {/* Header */}
         <div className="p-4 border-b border-gray-800">
-          <h1 className="text-2xl font-semibold">Expansi Analysis Center</h1>
+          <h1 className="text-2xl font-semibold">OverSear Analysis Center</h1>
           <p className="text-sm text-gray-400">AI-powered maritime surveillance analysis</p>
         </div>
 
