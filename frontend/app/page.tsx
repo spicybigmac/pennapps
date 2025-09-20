@@ -146,7 +146,12 @@ const HomePage: React.FC = () => {
       const data = await response.json();
       if (response.ok) {
         setVesselData(data);
-        clusterMarkers(data);
+        if(globeEl.current){
+          setClusterThreshold(0);
+          handleZoom(globeEl.current.pointOfView());
+        } else {
+          clusterMarkers(vesselData);
+        }
       }
     } catch (error) {
       console.error('Error fetching vessel data:', error);
