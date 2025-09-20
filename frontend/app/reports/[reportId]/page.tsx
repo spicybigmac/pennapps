@@ -34,6 +34,34 @@ const ReportDisplayPage = ({ params }: { params: Promise<{ reportId:string }> })
   const [reportData, setReportData] = useState<ReportData | null>(null);
   const [generatedJson, setGeneratedJson] = useState<any | null>(null);
 
+  const exportElementToPDF = (elementId: string, title: string) => {
+    if (typeof window === 'undefined') return;
+    const node = document.getElementById(elementId);
+    if (!node) return;
+    const printWindow = window.open('', '_blank');
+    if (!printWindow) return;
+    const styles = `
+      <style>
+        @page { size: A4; margin: 16mm; }
+        html, body { background: #ffffff; color: #111827; font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial; }
+        h1,h2,h3 { color: #111827; margin: 0 0 8px 0; }
+        p { margin: 8px 0; line-height: 1.5; }
+        section { margin-bottom: 20px; }
+        .border { border-color: #e5e7eb; }
+        svg { max-width: 100% !important; height: auto !important; }
+      </style>
+    `;
+    printWindow.document.write(`<html><head><title>${title}</title>${styles}</head><body>`);
+    printWindow.document.write(node.innerHTML);
+    printWindow.document.write('</body></html>');
+    printWindow.document.close();
+    printWindow.focus();
+    setTimeout(() => {
+      printWindow.print();
+      printWindow.close();
+    }, 300);
+  };
+
   useEffect(() => {
     // If this is a generated report, load JSON and render react-based sections
     const jsonKey = `report_json_${resolvedParams.reportId}`;
@@ -68,7 +96,15 @@ const ReportDisplayPage = ({ params }: { params: Promise<{ reportId:string }> })
             Report: <span className="text-gray-400 capitalize">{resolvedParams.reportId.replaceAll('-', ' ')}</span>
           </h1>
           <p className="text-gray-500 mb-8">Generated on: {new Date().toLocaleDateString()}</p>
-          <div className="bg-black border border-gray-800 rounded-lg p-8 space-y-10 max-h-[70vh] overflow-y-auto overflow-x-hidden">
+          <div className="mb-4 flex justify-end">
+            <button
+              onClick={() => exportElementToPDF('report-content', `Report ${resolvedParams.reportId}`)}
+              className="px-4 py-2 bg-white text-black rounded-md font-semibold hover:bg-gray-300"
+            >
+              Export PDF
+            </button>
+          </div>
+          <div id="report-content" className="bg-black border border-gray-800 rounded-lg p-8 space-y-10 max-h-[70vh] overflow-y-auto overflow-x-hidden">
             {/* Executive Summary */}
             {Array.isArray(generatedJson.executiveSummary) && (
               <section>
@@ -247,8 +283,15 @@ const ReportDisplayPage = ({ params }: { params: Promise<{ reportId:string }> })
           Report: <span className="text-gray-400 capitalize">{resolvedParams.reportId.replaceAll('-', ' ')}</span>
         </h1>
         <p className="text-gray-500 mb-8">Generated on: {new Date().toLocaleDateString()}</p>
-
-        <div className="bg-black border border-gray-800 rounded-lg p-8 space-y-12 max-h-[70vh] overflow-y-auto overflow-x-hidden">
+        <div className="mb-4 flex justify-end">
+          <button
+            onClick={() => exportElementToPDF('report-content', `Report ${resolvedParams.reportId}`)}
+            className="px-4 py-2 bg-white text-black rounded-md font-semibold hover:bg-gray-300"
+          >
+            Export PDF
+          </button>
+        </div>
+        <div id="report-content" className="bg-black border border-gray-800 rounded-lg p-8 space-y-12 max-h-[70vh] overflow-y-auto overflow-x-hidden">
           <section>
             <h2 className="text-xl font-semibold mb-4 border-b border-gray-800 pb-3">
               Weekly IUU Activity Analysis
