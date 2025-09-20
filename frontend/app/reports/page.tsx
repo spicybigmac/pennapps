@@ -59,7 +59,7 @@ const ReportsPage = () => {
   // Generation state
   const [isGenerating, setIsGenerating] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [generatedHtml, setGeneratedHtml] = useState<string>('');
+  const [generatedReport, setGeneratedReport] = useState<any>(null);
   const [includedSections, setIncludedSections] = useState<string[]>([]);
   const [lastGeneratedId, setLastGeneratedId] = useState<string | null>(null);
 
@@ -75,7 +75,7 @@ const ReportsPage = () => {
   const handleGenerate = async () => {
     setIsGenerating(true);
     setError(null);
-    setGeneratedHtml('');
+    setGeneratedReport(null);
     setIncludedSections([]);
     try {
       const payload = {
@@ -108,27 +108,19 @@ const ReportsPage = () => {
       }
 
       const data = await res.json();
-      let html = data.html ?? '';
-      // If model returned fenced code blocks, strip them
-      if (typeof html === 'string') {
-        const fenceRegex = /^```(?:html)?\n([\s\S]*?)\n```$/;
-        const match = html.match(fenceRegex);
-        if (match && match[1]) {
-          html = match[1];
-        }
-      }
+      const reportJson = data.report ?? null;
       console.log('[Reports] Generation success. Included sections:', data.included_sections);
-      setGeneratedHtml(html);
+      setGeneratedReport(reportJson);
       setIncludedSections(data.included_sections ?? []);
 
-      // Create a lightweight report entry and persist the HTML by id in localStorage
+      // Create a lightweight report entry and persist the JSON by id in localStorage
       const id = `generated-${Date.now()}`;
       const title = 'Generated Report';
       const date = new Date().toISOString().slice(0, 10);
       const clearanceSaved = clearance;
-      const storageKey = `report_html_${id}`;
+      const storageKey = `report_json_${id}`;
       try {
-        localStorage.setItem(storageKey, html);
+        localStorage.setItem(storageKey, JSON.stringify(reportJson));
       } catch (e) {
         console.warn('Failed saving report HTML to localStorage', e);
       }
@@ -301,7 +293,7 @@ const ReportsPage = () => {
             {error && (
               <p className="mt-3 text-sm text-red-400">{error}</p>
             )}
-            {/* Preview removed by request; user can click the new report entry to read */}
+            {/* No inline preview; user clicks the new report entry to read */}
           </div>
       </div>
 

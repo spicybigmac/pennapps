@@ -2,6 +2,7 @@ from fastapi import FastAPI, HTTPException, APIRouter
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from typing import Optional
+import json
 from contextlib import asynccontextmanager
 import uvicorn
 import dotenv
@@ -299,7 +300,7 @@ async def get_positions():
     return docs
 
 
-# Reports: Generate via Gemini
+# Reports: Generate via Gemini (JSON-structured)
 @app.post("/api/reports/generate")
 async def generate_report(request: ReportGenerateRequest):
     """
@@ -349,46 +350,78 @@ async def generate_report(request: ReportGenerateRequest):
             ),
         }.get(request.clearance, "Use a professional tone appropriate to the audience.")
 
-        # Construct a detailed multi-paragraph system-style instruction and task prompt
-        prompt = f"""
-You are an intelligence analyst assisting a maritime monitoring team working on IUU (Illegal, Unreported, and Unregulated) fishing detection and response. Generate a polished, decision-ready report for the PennApps operational console covering {", ".join(selected_sections)}. The report should synthesize recent signals from AIS behavior, satellite SAR/optical cues, patrol observations, and environmental context over {time_window_str}. Do not fabricate precise metrics; when quantitative detail is not available, use careful qualitative language (e.g., "elevated activity", "moderate likelihood", "notable clustering").
+        # Construct a strict JSON-only instruction so the frontend can render charts with Recharts
+        schema_block = (
+            "\n"  # leading newline for readability
+            "{\n"
+            "  \"executiveSummary\": [\"string paragraph\", \"string paragraph\"],\n"
+            "  \"sections\": [\n"
+            "    {\n"
+            "      \"heading\": \"string\",\n"
+            "      \"content\": [\"string paragraph\"],\n"
+            "      \"chart\": {\n"
+            "        \"type\": \"bar|radial|pie|none\",\n"
+            "        \"callout\": \"string one-sentence chart note\"\n"
+            "      }\n"
+            "    }\n"
+            "  ]\n"
+            "}\n"
+        )
 
-Tailor the content to the audience clearance level "{request.clearance}". {clearance_instructions} Provide a brief executive preface followed by clearly labeled sections. Only include the sections explicitly requested below and omit all others.
-
-Requested sections (include exactly these, with matching titles):
-- Weekly IUU Activity Analysis -> summarize patterns, hotspots, likely drivers; call out confidence and caveats.
-- AI Voice Agent Performance -> describe outreach efficacy, common call outcomes, and operator load implications.
-- Vessel Track Details -> describe representative tracks, behavioral anomalies (e.g., loitering, rendezvous), and risk rationales without revealing sensitive coordinates.
-- Economic Impact Analysis -> discuss likely economic implications (market pressure, local community impact, enforcement costs savings/risks) using directional, not precise, estimates.
-
-Match the existing report presentation style used in the UI: clear headings, short paragraphs (2–5 sentences), readable spacing, and succinct bullets that can accompany charts. Include explicit "chart callouts" as sentences (not images) that an engineer could later pair with bar, radial, or pie charts (e.g., "callout: success_rate trending upward; drivers: fewer escalations").
-
-OUTPUT FORMAT REQUIREMENTS (strict):
-- Return VALID HTML only (no markdown, no JSON).
-- Start with <section><h2>Executive Summary</h2> containing AT LEAST TWO substantial paragraphs for leadership.
-- Then include ONLY the requested sections. For each included section:
-  - Wrap content in <section> and an <h2> heading that EXACTLY matches the section title above.
-  - Provide 1–2 concise paragraphs.
-  - Provide a <ul> with 3–5 bullets (operational insights; include 1 bullet labeled "chart callout:" if appropriate).
-- Do NOT include tables, code blocks, or inline CSS. Keep to semantic HTML only.
-"""
+        sections_list = ", ".join(selected_sections)
+        prompt = (
+            f"You are an intelligence analyst assisting a maritime monitoring team working on IUU (Illegal, Unreported, and Unregulated) fishing detection and response. Generate a polished, decision-ready report for the PennApps operational console covering {sections_list} for {time_window_str}.\n\n"
+            f"Tailor the content to the audience clearance level \"{request.clearance}\". {clearance_instructions}\n\n"
+            "Return STRICT JSON ONLY (no markdown, no code fences, no prose outside JSON) that conforms to this schema:" + schema_block + "\n"
+            "Rules:\n"
+            "- Include ONLY the requested sections and in a logical order.\n"
+            "- Use careful qualitative language; do not invent precise numbers.\n"
+            "- Keep paragraphs short (2–5 sentences). Avoid lists inside paragraphs.\n"
+        )
 
         response = model.generate_content(prompt)
 
         if response.candidates and response.candidates[0].content:
-            ai_html = response.candidates[0].content.parts[0].text
+            ai_text = response.candidates[0].content.parts[0].text
         else:
-            ai_html = "<section><h2>Executive Summary</h2><p>We could not generate the report at this time.</p></section>"
+            ai_text = "{}"
 
-        # Log prompt for auditing
+        # Try to extract JSON (strip code fences if present)
+        text = ai_text.strip()
+        # Remove common code-fence wrappers like ```json ... ```
+        if text.startswith("```json") or text.startswith("```"):
+            first_newline = text.find("\n")
+            if first_newline != -1:
+                text = text[first_newline + 1 :]
+            if text.endswith("```"):
+                text = text[: -3].rstrip()
+
+        report_json = None
         try:
-            mongodb.logPrompt("report_generator", prompt, ai_html[:5000])
+            report_json = json.loads(text)
+        except Exception:
+            # Fallback minimal structure
+            report_json = {
+                "executiveSummary": [
+                    "We could not fully parse the model output. This is a fallback summary.",
+                    "Please regenerate the report or adjust inputs.",
+                ],
+                "sections": [{
+                    "heading": selected_sections[0],
+                    "content": ["Summary unavailable."],
+                    "chart": {"type": "none", "callout": "no chart"}
+                }]
+            }
+
+        # Log prompt for auditing (truncate content)
+        try:
+            mongodb.logPrompt("report_generator", prompt, json.dumps(report_json)[:5000])
         except Exception:
             pass
 
         return {
             "status": "success",
-            "html": ai_html,
+            "report": report_json,
             "included_sections": selected_sections,
             "clearance": request.clearance,
         }
