@@ -3,6 +3,7 @@ archive
 
 # This can be more specific if your backend folder is named 'backend'
 backend/__pycache__/
+backend/__pycache__/
 backend/venv/
 backend/.venv/
 
