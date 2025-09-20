@@ -341,6 +341,11 @@ const HomePage: React.FC = () => {
             backdropFilter: 'blur(10px)'
           }}
         >
+
+          <div style={{ fontWeight: 'bold', marginBottom: '12px', color: hoveredVessel.legal ? '#51cf66' : '#ff6b6b', fontSize: '16px' }}>
+            {hoveredVessel.legal ? 'Registered' : 'Unregistered'}
+          </div>
+
           {/* Image placeholder */}
           <div
             style={{
@@ -360,10 +365,6 @@ const HomePage: React.FC = () => {
             📷 Vessel Image Placeholder
           </div>
           
-          <div style={{ fontWeight: 'bold', marginBottom: '12px', color: hoveredVessel.legal ? '#51cf66' : '#ff6b6b', fontSize: '16px' }}>
-            Vessel Information
-          </div>
-          
           <div style={{ marginBottom: '10px' }}>
             <strong>Location:</strong> {hoveredVessel.lat.toFixed(4)}°, {hoveredVessel.lng.toFixed(4)}°
           </div>
@@ -376,17 +377,6 @@ const HomePage: React.FC = () => {
               fontWeight: 'bold'
             }}>
               {hoveredVessel.isfishing ? 'Fishing' : 'Not Fishing'}
-            </span>
-          </div>
-          
-          <div style={{ marginBottom: '16px' }}>
-            <strong>Registered:</strong> 
-            <span style={{ 
-              color: hoveredVessel.legal ? '#51cf66' : '#ff6b6b',
-              marginLeft: '8px',
-              fontWeight: 'bold'
-            }}>
-              {hoveredVessel.legal ? 'Yes' : 'No'}
             </span>
           </div>
           
