@@ -1,0 +1,157 @@
+2025-09-20 17:20:16,255 - INFO - 🌍 Starting 5-month GLOBAL SAR data collection (no region restrictions)
+2025-09-20 17:20:16,255 - INFO - 📁 Output directory: global_sar_data
+2025-09-20 17:20:16,255 - INFO - ================================================================================
+2025-09-20 17:20:16,255 - INFO - 📅 Processing Month 1 (2025-08-20 to 2025-09-19)
+2025-09-20 17:20:16,255 - INFO - ================================================================================
+2025-09-20 17:20:16,255 - INFO - 🌍 Collecting ALL vessels globally (matched + unmatched)
+2025-09-20 17:20:16,610 - ERROR - Collection error: API error: 422 - {"statusCode":422,"error":"Unprocessable Entity","messages":[{"title":"body","detail":"body malformed"}]}
+2025-09-20 17:20:16,610 - ERROR - ❌ Global vessels collection failed: API error: 422 - {"statusCode":422,"error":"Unprocessable Entity","messages":[{"title":"body","detail":"body malformed"}]}
+2025-09-20 17:20:16,611 - INFO - ✅ Completed Month 1 (2025-08-20 to 2025-09-19)
+2025-09-20 17:20:16,611 - INFO - 📊 Month 1 Summary:
+2025-09-20 17:20:16,611 - INFO -    Matched Vessels: 0
+2025-09-20 17:20:16,612 - INFO -    Unmatched Vessels: 0
+2025-09-20 17:20:21,613 - INFO - ================================================================================
+2025-09-20 17:20:21,614 - INFO - 📅 Processing Month 2 (2025-07-21 to 2025-08-20)
+2025-09-20 17:20:21,614 - INFO - ================================================================================
+2025-09-20 17:20:21,614 - INFO - 🌍 Collecting ALL vessels globally (matched + unmatched)
+2025-09-20 17:20:21,930 - ERROR - Collection error: API error: 422 - {"statusCode":422,"error":"Unprocessable Entity","messages":[{"title":"body","detail":"body malformed"}]}
+2025-09-20 17:20:21,930 - ERROR - ❌ Global vessels collection failed: API error: 422 - {"statusCode":422,"error":"Unprocessable Entity","messages":[{"title":"body","detail":"body malformed"}]}
+2025-09-20 17:20:21,932 - INFO - ✅ Completed Month 2 (2025-07-21 to 2025-08-20)
+2025-09-20 17:20:21,932 - INFO - 📊 Month 2 Summary:
+2025-09-20 17:20:21,932 - INFO -    Matched Vessels: 0
+2025-09-20 17:20:21,932 - INFO -    Unmatched Vessels: 0
+2025-09-20 17:20:26,933 - INFO - ================================================================================
+2025-09-20 17:20:26,934 - INFO - 📅 Processing Month 3 (2025-06-21 to 2025-07-21)
+2025-09-20 17:20:26,935 - INFO - ================================================================================
+2025-09-20 17:20:26,935 - INFO - 🌍 Collecting ALL vessels globally (matched + unmatched)
+2025-09-20 17:20:27,311 - ERROR - Collection error: API error: 422 - {"statusCode":422,"error":"Unprocessable Entity","messages":[{"title":"body","detail":"body malformed"}]}
+2025-09-20 17:20:27,311 - ERROR - ❌ Global vessels collection failed: API error: 422 - {"statusCode":422,"error":"Unprocessable Entity","messages":[{"title":"body","detail":"body malformed"}]}
+2025-09-20 17:20:27,312 - INFO - ✅ Completed Month 3 (2025-06-21 to 2025-07-21)
+2025-09-20 17:20:27,312 - INFO - 📊 Month 3 Summary:
+2025-09-20 17:20:27,312 - INFO -    Matched Vessels: 0
+2025-09-20 17:20:27,312 - INFO -    Unmatched Vessels: 0
+2025-09-20 17:20:32,314 - INFO - ================================================================================
+2025-09-20 17:20:32,314 - INFO - 📅 Processing Month 4 (2025-05-22 to 2025-06-21)
+2025-09-20 17:20:32,314 - INFO - ================================================================================
+2025-09-20 17:20:32,314 - INFO - 🌍 Collecting ALL vessels globally (matched + unmatched)
+2025-09-20 17:20:32,635 - ERROR - Collection error: API error: 422 - {"statusCode":422,"error":"Unprocessable Entity","messages":[{"title":"body","detail":"body malformed"}]}
+2025-09-20 17:20:32,635 - ERROR - ❌ Global vessels collection failed: API error: 422 - {"statusCode":422,"error":"Unprocessable Entity","messages":[{"title":"body","detail":"body malformed"}]}
+2025-09-20 17:20:32,636 - INFO - ✅ Completed Month 4 (2025-05-22 to 2025-06-21)
+2025-09-20 17:20:32,636 - INFO - 📊 Month 4 Summary:
+2025-09-20 17:20:32,636 - INFO -    Matched Vessels: 0
+2025-09-20 17:20:32,636 - INFO -    Unmatched Vessels: 0
+2025-09-20 17:20:37,638 - INFO - ================================================================================
+2025-09-20 17:20:37,639 - INFO - 📅 Processing Month 5 (2025-04-22 to 2025-05-22)
+2025-09-20 17:20:37,639 - INFO - ================================================================================
+2025-09-20 17:20:37,639 - INFO - 🌍 Collecting ALL vessels globally (matched + unmatched)
+2025-09-20 17:20:38,062 - ERROR - Collection error: API error: 422 - {"statusCode":422,"error":"Unprocessable Entity","messages":[{"title":"body","detail":"body malformed"}]}
+2025-09-20 17:20:38,062 - ERROR - ❌ Global vessels collection failed: API error: 422 - {"statusCode":422,"error":"Unprocessable Entity","messages":[{"title":"body","detail":"body malformed"}]}
+2025-09-20 17:20:38,064 - INFO - ✅ Completed Month 5 (2025-04-22 to 2025-05-22)
+2025-09-20 17:20:38,064 - INFO - 📊 Month 5 Summary:
+2025-09-20 17:20:38,064 - INFO -    Matched Vessels: 0
+2025-09-20 17:20:38,064 - INFO -    Unmatched Vessels: 0
+2025-09-20 17:20:43,065 - INFO - 🎉 5-month global SAR collection complete!
+2025-09-20 17:20:43,065 - INFO - ================================================================================
+2025-09-20 17:20:43,065 - INFO - 📊 FINAL GLOBAL SAR COLLECTION SUMMARY
+2025-09-20 17:20:43,065 - INFO - ================================================================================
+2025-09-20 17:20:43,065 - INFO - 📁 Data directory: global_sar_data
+2025-09-20 17:20:43,066 - INFO - 📅 Months completed: 5/5
+2025-09-20 17:20:43,066 - INFO - 📡 Total matched vessels: 0
+2025-09-20 17:20:43,066 - INFO - 🕳️ Total unmatched vessels: 0
+2025-09-20 17:20:43,066 - INFO - 🌍 Total vessels (global): 0
+2025-09-20 17:20:43,066 - INFO - 🔢 Total API requests: 5
+2025-09-20 17:20:43,066 - INFO - 📄 Progress file: global_sar_data/collection_progress.json
+2025-09-20 17:20:43,066 - INFO - ================================================================================
+2025-09-20 17:25:46,952 - INFO - 🌍 Starting 5-month GLOBAL SAR data collection (no region restrictions)
+2025-09-20 17:25:46,953 - INFO - 📁 Output directory: global_sar_data
+2025-09-20 17:25:46,953 - INFO - ⏭️ Skipping Month 1 (2025-08-20 to 2025-09-19) (already completed)
+2025-09-20 17:25:46,953 - INFO - ⏭️ Skipping Month 2 (2025-07-21 to 2025-08-20) (already completed)
+2025-09-20 17:25:46,953 - INFO - ⏭️ Skipping Month 3 (2025-06-21 to 2025-07-21) (already completed)
+2025-09-20 17:25:46,953 - INFO - ⏭️ Skipping Month 4 (2025-05-22 to 2025-06-21) (already completed)
+2025-09-20 17:25:46,953 - INFO - ⏭️ Skipping Month 5 (2025-04-22 to 2025-05-22) (already completed)
+2025-09-20 17:25:46,953 - INFO - 🎉 5-month global SAR collection complete!
+2025-09-20 17:25:46,953 - INFO - ================================================================================
+2025-09-20 17:25:46,953 - INFO - 📊 FINAL GLOBAL SAR COLLECTION SUMMARY
+2025-09-20 17:25:46,953 - INFO - ================================================================================
+2025-09-20 17:25:46,953 - INFO - 📁 Data directory: global_sar_data
+2025-09-20 17:25:46,953 - INFO - 📅 Months completed: 5/5
+2025-09-20 17:25:46,953 - INFO - 📡 Total matched vessels: 0
+2025-09-20 17:25:46,953 - INFO - 🕳️ Total unmatched vessels: 0
+2025-09-20 17:25:46,953 - INFO - 🌍 Total vessels (global): 0
+2025-09-20 17:25:46,953 - INFO - 🔢 Total API requests: 5
+2025-09-20 17:25:46,953 - INFO - 📄 Progress file: global_sar_data/collection_progress.json
+2025-09-20 17:25:46,953 - INFO - ================================================================================
+2025-09-20 17:25:53,704 - INFO - 🌍 Starting 5-month GLOBAL SAR data collection (no region restrictions)
+2025-09-20 17:25:53,705 - INFO - 📁 Output directory: global_sar_data
+2025-09-20 17:25:53,707 - INFO - ================================================================================
+2025-09-20 17:25:53,708 - INFO - 📅 Processing Month 1 (2025-08-20 to 2025-09-19)
+2025-09-20 17:25:53,708 - INFO - ================================================================================
+2025-09-20 17:25:53,709 - INFO - 🌍 Collecting ALL vessels globally (matched + unmatched)
+2025-09-20 17:25:54,114 - WARNING - GET request failed: 422 - {"statusCode":422,"error":"Unprocessable Entity","messages":[{"title":"region-id","detail":"region-id query param is required"}]}
+2025-09-20 17:25:54,114 - INFO - Trying POST with empty body as fallback...
+2025-09-20 17:25:54,386 - ERROR - Collection error: Both GET and POST failed. GET: 422 - {"statusCode":422,"error":"Unprocessable Entity","messages":[{"title":"region-id","detail":"region-id query param is required"}]}. POST: 422 - {"statusCode":422,"error":"Unprocessable Entity","messages":[{"title":"body","detail":"body malformed"}]}
+2025-09-20 17:25:54,387 - ERROR - ❌ Global vessels collection failed: Both GET and POST failed. GET: 422 - {"statusCode":422,"error":"Unprocessable Entity","messages":[{"title":"region-id","detail":"region-id query param is required"}]}. POST: 422 - {"statusCode":422,"error":"Unprocessable Entity","messages":[{"title":"body","detail":"body malformed"}]}
+2025-09-20 17:25:54,387 - INFO - ✅ Completed Month 1 (2025-08-20 to 2025-09-19)
+2025-09-20 17:25:54,387 - INFO - 📊 Month 1 Summary:
+2025-09-20 17:25:54,387 - INFO -    Matched Vessels: 0
+2025-09-20 17:25:54,387 - INFO -    Unmatched Vessels: 0
+2025-09-20 17:25:59,389 - INFO - ================================================================================
+2025-09-20 17:25:59,389 - INFO - 📅 Processing Month 2 (2025-07-21 to 2025-08-20)
+2025-09-20 17:25:59,389 - INFO - ================================================================================
+2025-09-20 17:25:59,389 - INFO - 🌍 Collecting ALL vessels globally (matched + unmatched)
+2025-09-20 17:25:59,707 - WARNING - GET request failed: 422 - {"statusCode":422,"error":"Unprocessable Entity","messages":[{"title":"region-id","detail":"region-id query param is required"}]}
+2025-09-20 17:25:59,707 - INFO - Trying POST with empty body as fallback...
+2025-09-20 17:26:00,009 - ERROR - Collection error: Both GET and POST failed. GET: 422 - {"statusCode":422,"error":"Unprocessable Entity","messages":[{"title":"region-id","detail":"region-id query param is required"}]}. POST: 422 - {"statusCode":422,"error":"Unprocessable Entity","messages":[{"title":"body","detail":"body malformed"}]}
+2025-09-20 17:26:00,009 - ERROR - ❌ Global vessels collection failed: Both GET and POST failed. GET: 422 - {"statusCode":422,"error":"Unprocessable Entity","messages":[{"title":"region-id","detail":"region-id query param is required"}]}. POST: 422 - {"statusCode":422,"error":"Unprocessable Entity","messages":[{"title":"body","detail":"body malformed"}]}
+2025-09-20 17:26:00,010 - INFO - ✅ Completed Month 2 (2025-07-21 to 2025-08-20)
+2025-09-20 17:26:00,010 - INFO - 📊 Month 2 Summary:
+2025-09-20 17:26:00,010 - INFO -    Matched Vessels: 0
+2025-09-20 17:26:00,010 - INFO -    Unmatched Vessels: 0
+2025-09-20 17:26:05,011 - INFO - ================================================================================
+2025-09-20 17:26:05,012 - INFO - 📅 Processing Month 3 (2025-06-21 to 2025-07-21)
+2025-09-20 17:26:05,012 - INFO - ================================================================================
+2025-09-20 17:26:05,012 - INFO - 🌍 Collecting ALL vessels globally (matched + unmatched)
+2025-09-20 17:26:05,300 - WARNING - GET request failed: 422 - {"statusCode":422,"error":"Unprocessable Entity","messages":[{"title":"region-id","detail":"region-id query param is required"}]}
+2025-09-20 17:26:05,300 - INFO - Trying POST with empty body as fallback...
+2025-09-20 17:26:05,516 - ERROR - Collection error: Both GET and POST failed. GET: 422 - {"statusCode":422,"error":"Unprocessable Entity","messages":[{"title":"region-id","detail":"region-id query param is required"}]}. POST: 422 - {"statusCode":422,"error":"Unprocessable Entity","messages":[{"title":"body","detail":"body malformed"}]}
+2025-09-20 17:26:05,516 - ERROR - ❌ Global vessels collection failed: Both GET and POST failed. GET: 422 - {"statusCode":422,"error":"Unprocessable Entity","messages":[{"title":"region-id","detail":"region-id query param is required"}]}. POST: 422 - {"statusCode":422,"error":"Unprocessable Entity","messages":[{"title":"body","detail":"body malformed"}]}
+2025-09-20 17:26:05,517 - INFO - ✅ Completed Month 3 (2025-06-21 to 2025-07-21)
+2025-09-20 17:26:05,517 - INFO - 📊 Month 3 Summary:
+2025-09-20 17:26:05,517 - INFO -    Matched Vessels: 0
+2025-09-20 17:26:05,517 - INFO -    Unmatched Vessels: 0
+2025-09-20 17:26:10,519 - INFO - ================================================================================
+2025-09-20 17:26:10,520 - INFO - 📅 Processing Month 4 (2025-05-22 to 2025-06-21)
+2025-09-20 17:26:10,520 - INFO - ================================================================================
+2025-09-20 17:26:10,520 - INFO - 🌍 Collecting ALL vessels globally (matched + unmatched)
+2025-09-20 17:26:10,817 - WARNING - GET request failed: 422 - {"statusCode":422,"error":"Unprocessable Entity","messages":[{"title":"region-id","detail":"region-id query param is required"}]}
+2025-09-20 17:26:10,818 - INFO - Trying POST with empty body as fallback...
+2025-09-20 17:26:11,031 - ERROR - Collection error: Both GET and POST failed. GET: 422 - {"statusCode":422,"error":"Unprocessable Entity","messages":[{"title":"region-id","detail":"region-id query param is required"}]}. POST: 422 - {"statusCode":422,"error":"Unprocessable Entity","messages":[{"title":"body","detail":"body malformed"}]}
+2025-09-20 17:26:11,032 - ERROR - ❌ Global vessels collection failed: Both GET and POST failed. GET: 422 - {"statusCode":422,"error":"Unprocessable Entity","messages":[{"title":"region-id","detail":"region-id query param is required"}]}. POST: 422 - {"statusCode":422,"error":"Unprocessable Entity","messages":[{"title":"body","detail":"body malformed"}]}
+2025-09-20 17:26:11,033 - INFO - ✅ Completed Month 4 (2025-05-22 to 2025-06-21)
+2025-09-20 17:26:11,033 - INFO - 📊 Month 4 Summary:
+2025-09-20 17:26:11,033 - INFO -    Matched Vessels: 0
+2025-09-20 17:26:11,033 - INFO -    Unmatched Vessels: 0
+2025-09-20 17:26:16,034 - INFO - ================================================================================
+2025-09-20 17:26:16,035 - INFO - 📅 Processing Month 5 (2025-04-22 to 2025-05-22)
+2025-09-20 17:26:16,035 - INFO - ================================================================================
+2025-09-20 17:26:16,035 - INFO - 🌍 Collecting ALL vessels globally (matched + unmatched)
+2025-09-20 17:26:16,316 - WARNING - GET request failed: 422 - {"statusCode":422,"error":"Unprocessable Entity","messages":[{"title":"region-id","detail":"region-id query param is required"}]}
+2025-09-20 17:26:16,316 - INFO - Trying POST with empty body as fallback...
+2025-09-20 17:26:16,552 - ERROR - Collection error: Both GET and POST failed. GET: 422 - {"statusCode":422,"error":"Unprocessable Entity","messages":[{"title":"region-id","detail":"region-id query param is required"}]}. POST: 422 - {"statusCode":422,"error":"Unprocessable Entity","messages":[{"title":"body","detail":"body malformed"}]}
+2025-09-20 17:26:16,552 - ERROR - ❌ Global vessels collection failed: Both GET and POST failed. GET: 422 - {"statusCode":422,"error":"Unprocessable Entity","messages":[{"title":"region-id","detail":"region-id query param is required"}]}. POST: 422 - {"statusCode":422,"error":"Unprocessable Entity","messages":[{"title":"body","detail":"body malformed"}]}
+2025-09-20 17:26:16,553 - INFO - ✅ Completed Month 5 (2025-04-22 to 2025-05-22)
+2025-09-20 17:26:16,553 - INFO - 📊 Month 5 Summary:
+2025-09-20 17:26:16,553 - INFO -    Matched Vessels: 0
+2025-09-20 17:26:16,553 - INFO -    Unmatched Vessels: 0
+2025-09-20 17:26:21,555 - INFO - 🎉 5-month global SAR collection complete!
+2025-09-20 17:26:21,555 - INFO - ================================================================================
+2025-09-20 17:26:21,555 - INFO - 📊 FINAL GLOBAL SAR COLLECTION SUMMARY
+2025-09-20 17:26:21,556 - INFO - ================================================================================
+2025-09-20 17:26:21,556 - INFO - 📁 Data directory: global_sar_data
+2025-09-20 17:26:21,556 - INFO - 📅 Months completed: 5/5
+2025-09-20 17:26:21,556 - INFO - 📡 Total matched vessels: 0
+2025-09-20 17:26:21,556 - INFO - 🕳️ Total unmatched vessels: 0
+2025-09-20 17:26:21,556 - INFO - 🌍 Total vessels (global): 0
+2025-09-20 17:26:21,556 - INFO - 🔢 Total API requests: 10
+2025-09-20 17:26:21,556 - INFO - 📄 Progress file: global_sar_data/collection_progress.json
+2025-09-20 17:26:21,556 - INFO - ================================================================================

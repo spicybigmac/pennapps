@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
-5-Month Global Matched Vessels Collection
-Collects matched vessels (AIS data) over 5 months using working regions
+5-Month Global SAR Data Collection
+Collects both matched and unmatched vessels globally without region restrictions
 """
 
 import asyncio
@@ -22,14 +22,14 @@ logging.basicConfig(
     level=logging.INFO,
     format='%(asctime)s - %(levelname)s - %(message)s',
     handlers=[
-        logging.FileHandler('matched_vessels_5month_collection.log'),
+        logging.FileHandler('global_sar_5month_collection.log'),
         logging.StreamHandler()
     ]
 )
 logger = logging.getLogger(__name__)
 
-class OptimizedMatchedVesselsCollector5Month:
-    """Optimized 5-month matched vessels collector using working regions"""
+class GlobalSARCollector5Month:
+    """Global 5-month SAR data collector without region restrictions"""
     
     def __init__(self, api_key: str):
         self.api_key = api_key
@@ -45,26 +45,8 @@ class OptimizedMatchedVesselsCollector5Month:
         self.minute_start = time.time()
         
         # Create output directory
-        self.output_dir = Path("matched_vessels_5month_optimized")
+        self.output_dir = Path("global_sar_data")
         self.output_dir.mkdir(exist_ok=True)
-        
-        # Working regions (same as SAR - tested and verified)
-        self.working_regions = [
-            {
-                "name": "Primary_Region_8465", 
-                "id": "8465", 
-                "type": "eez", 
-                "description": "Primary Region 8465 (High Volume)",
-                "priority": 1
-            },
-            {
-                "name": "Secondary_Region_8466", 
-                "id": "8466", 
-                "type": "eez", 
-                "description": "Secondary Region 8466 (Additional Coverage)",
-                "priority": 2
-            }
-        ]
         
         # Progress tracking
         self.progress_file = self.output_dir / "collection_progress.json"
@@ -78,11 +60,11 @@ class OptimizedMatchedVesselsCollector5Month:
         else:
             self.progress = {
                 "completed_months": [],
-                "completed_regions": {},
                 "total_vessels_collected": 0,
                 "start_time": datetime.utcnow().isoformat(),
                 "collection_stats": {
                     "total_matched_vessels": 0,
+                    "total_unmatched_vessels": 0,
                     "total_requests_made": 0
                 }
             }
@@ -110,12 +92,11 @@ class OptimizedMatchedVesselsCollector5Month:
         
         return months
     
-    async def collect_5month_data(self):
-        """Main collection method for 5 months of matched vessels data"""
+    async def collect_5month_global_data(self):
+        """Main collection method for 5 months of global SAR data"""
         
-        logger.info("📡 Starting optimized 5-month matched vessels collection")
+        logger.info("🌍 Starting 5-month GLOBAL SAR data collection (no region restrictions)")
         logger.info(f"📁 Output directory: {self.output_dir}")
-        logger.info(f"🌊 Using {len(self.working_regions)} working regions")
         
         months = self.get_month_ranges()
         
@@ -128,7 +109,7 @@ class OptimizedMatchedVesselsCollector5Month:
             logger.info(f"📅 Processing {month['description']}")
             logger.info("=" * 80)
             
-            month_results = await self.collect_month_data(month)
+            month_results = await self.collect_month_global_data(month)
             
             # Mark month as completed
             self.progress["completed_months"].append(month["month_number"])
@@ -137,89 +118,69 @@ class OptimizedMatchedVesselsCollector5Month:
             logger.info(f"✅ Completed {month['description']}")
             logger.info(f"📊 Month {month['month_number']} Summary:")
             logger.info(f"   Matched Vessels: {month_results['total_matched_vessels']}")
+            logger.info(f"   Unmatched Vessels: {month_results['total_unmatched_vessels']}")
             
             # Update global stats
             self.progress["collection_stats"]["total_matched_vessels"] += month_results["total_matched_vessels"]
-            self.progress["total_vessels_collected"] += month_results["total_matched_vessels"]
+            self.progress["collection_stats"]["total_unmatched_vessels"] += month_results["total_unmatched_vessels"]
+            self.progress["total_vessels_collected"] += month_results["total_matched_vessels"] + month_results["total_unmatched_vessels"]
             self.save_progress()
             
             # Delay between months
             await asyncio.sleep(5)
         
-        logger.info("🎉 5-month matched vessels collection complete!")
+        logger.info("🎉 5-month global SAR collection complete!")
         self.print_final_summary()
     
-    async def collect_month_data(self, month):
-        """Collect matched vessels data for a single month across all working regions"""
+    async def collect_month_global_data(self, month):
+        """Collect global SAR data for a single month"""
         
         month_results = {
             "month_number": month["month_number"],
             "start_date": month["start_date"],
             "end_date": month["end_date"],
-            "regions": {},
-            "total_matched_vessels": 0
+            "collection_timestamp": datetime.utcnow().isoformat(),
+            "matched_vessels": [],
+            "unmatched_vessels": [],
+            "total_matched_vessels": 0,
+            "total_unmatched_vessels": 0,
+            "collection_errors": []
         }
         
-        for region in self.working_regions:
-            region_key = f"{region['name']}_{region['id']}"
+        # Collect ALL vessels (both matched and unmatched) in one call
+        logger.info("🌍 Collecting ALL vessels globally (matched + unmatched)")
+        try:
+            all_vessels = await self.collect_sar_data_global(
+                month["start_date"], month["end_date"], 
+                filters=[]  # No filters = get everything
+            )
             
-            if region_key in self.progress["completed_regions"].get(str(month["month_number"]), []):
-                logger.info(f"⏭️ Skipping {region['name']} for month {month['month_number']} (already completed)")
-                continue
+            # Separate matched and unmatched vessels
+            matched_vessels = [v for v in all_vessels if v.get("matched", False)]
+            unmatched_vessels = [v for v in all_vessels if not v.get("matched", False)]
             
-            logger.info(f"🌊 Processing {region['description']} (ID: {region['id']})")
+            month_results["matched_vessels"] = matched_vessels
+            month_results["unmatched_vessels"] = unmatched_vessels
+            month_results["total_matched_vessels"] = len(matched_vessels)
+            month_results["total_unmatched_vessels"] = len(unmatched_vessels)
             
-            region_results = await self.collect_region_month_data(month, region)
-            month_results["regions"][region_key] = region_results
-            
-            # Update totals
-            month_results["total_matched_vessels"] += len(region_results.get("matched_vessels", []))
-            
-            # Mark region as completed
-            if str(month["month_number"]) not in self.progress["completed_regions"]:
-                self.progress["completed_regions"][str(month["month_number"])] = []
-            self.progress["completed_regions"][str(month["month_number"])].append(region_key)
-            self.save_progress()
-            
-            # Rate limiting - wait between regions
-            await asyncio.sleep(3)
+            logger.info(f"✅ Found {len(all_vessels)} total vessels:")
+            logger.info(f"   📡 Matched vessels: {len(matched_vessels)}")
+            logger.info(f"   🕳️ Unmatched vessels: {len(unmatched_vessels)}")
+        except Exception as e:
+            error_msg = f"Global vessels collection failed: {e}"
+            logger.error(f"❌ {error_msg}")
+            month_results["collection_errors"].append(error_msg)
         
         # Save month results
-        month_file = self.output_dir / f"matched_month_{month['month_number']}_complete.json"
+        month_file = self.output_dir / f"global_month_{month['month_number']}_complete.json"
         with open(month_file, 'w') as f:
             json.dump(month_results, f, indent=2, default=str)
         
         return month_results
     
-    async def collect_region_month_data(self, month, region):
-        """Collect matched vessels data for a specific region and month"""
-        
-        region_results = {
-            "region_name": region["name"],
-            "region_id": region["id"],
-            "month": month["month_number"],
-            "matched_vessels": [],
-            "collection_errors": []
-        }
-        
-        # Collect matched vessels (matched=true)
-        logger.info(f"  📡 Collecting matched vessels for {region['name']}")
-        try:
-            matched_vessels = await self.collect_sar_data(
-                month["start_date"], month["end_date"], 
-                region["id"], region["type"], filters=[{"matched": "true"}]
-            )
-            region_results["matched_vessels"] = matched_vessels
-            logger.info(f"  ✅ Found {len(matched_vessels)} matched vessels")
-        except Exception as e:
-            error_msg = f"Matched vessels collection failed: {e}"
-            logger.error(f"  ❌ {error_msg}")
-            region_results["collection_errors"].append(error_msg)
-        
-        return region_results
-    
-    async def collect_sar_data(self, start_date, end_date, region_id, region_type, filters):
-        """Collect SAR data with specific parameters"""
+    async def collect_sar_data_global(self, start_date, end_date, filters):
+        """Collect global SAR data without region restrictions"""
         
         # Rate limiting
         await self._check_rate_limit()
@@ -236,16 +197,23 @@ class OptimizedMatchedVesselsCollector5Month:
             "group-by": "VESSEL_ID"
         }
         
-        # Add filters
-        for i, filter_dict in enumerate(filters):
-            for key, value in filter_dict.items():
-                params[f"filters[{i}]"] = f"{key}='{value}'"
+        # Add filters (only if provided)
+        if filters:
+            for i, filter_dict in enumerate(filters):
+                for key, value in filter_dict.items():
+                    params[f"filters[{i}]"] = f"{key}='{value}'"
         
-        # Region specification
+        # Global data collection using GeoJSON polygon (like Example 1 in docs)
         data = {
-            "region": {
-                "dataset": "public-eez-areas",
-                "id": region_id
+            "geojson": {
+                "type": "Polygon",
+                "coordinates": [[
+                    [-180, -90],   # min_lon, min_lat
+                    [180, -90],    # max_lon, min_lat
+                    [180, 90],     # max_lon, max_lat
+                    [-180, 90],    # min_lon, max_lat
+                    [-180, -90]    # close polygon
+                ]]
             }
         }
         
@@ -335,12 +303,13 @@ class OptimizedMatchedVesselsCollector5Month:
     def print_final_summary(self):
         """Print final collection summary"""
         logger.info("=" * 80)
-        logger.info("📊 FINAL MATCHED VESSELS COLLECTION SUMMARY")
+        logger.info("📊 FINAL GLOBAL SAR COLLECTION SUMMARY")
         logger.info("=" * 80)
         logger.info(f"📁 Data directory: {self.output_dir}")
         logger.info(f"📅 Months completed: {len(self.progress['completed_months'])}/5")
-        logger.info(f"🌊 Regions processed: {sum(len(regions) for regions in self.progress['completed_regions'].values())}")
         logger.info(f"📡 Total matched vessels: {self.progress['collection_stats']['total_matched_vessels']}")
+        logger.info(f"🕳️ Total unmatched vessels: {self.progress['collection_stats']['total_unmatched_vessels']}")
+        logger.info(f"🌍 Total vessels (global): {self.progress['total_vessels_collected']}")
         logger.info(f"🔢 Total API requests: {self.progress['collection_stats']['total_requests_made']}")
         logger.info(f"📄 Progress file: {self.progress_file}")
         logger.info("=" * 80)
@@ -355,10 +324,10 @@ async def main():
         return
     
     # Create collector
-    collector = OptimizedMatchedVesselsCollector5Month(api_key)
+    collector = GlobalSARCollector5Month(api_key)
     
     # Start collection
-    await collector.collect_5month_data()
+    await collector.collect_5month_global_data()
 
 if __name__ == "__main__":
     asyncio.run(main())

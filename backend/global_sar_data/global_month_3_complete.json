@@ -1,0 +1,13 @@
+{
+  "month_number": 3,
+  "start_date": "2025-06-21",
+  "end_date": "2025-07-21",
+  "collection_timestamp": "2025-09-20T21:26:05.012254",
+  "matched_vessels": [],
+  "unmatched_vessels": [],
+  "total_matched_vessels": 0,
+  "total_unmatched_vessels": 0,
+  "collection_errors": [
+    "Global vessels collection failed: Both GET and POST failed. GET: 422 - {\"statusCode\":422,\"error\":\"Unprocessable Entity\",\"messages\":[{\"title\":\"region-id\",\"detail\":\"region-id query param is required\"}]}. POST: 422 - {\"statusCode\":422,\"error\":\"Unprocessable Entity\",\"messages\":[{\"title\":\"body\",\"detail\":\"body malformed\"}]}"
+  ]
+}
