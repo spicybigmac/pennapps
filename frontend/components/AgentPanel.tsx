@@ -7,8 +7,6 @@ export type AgentPoint = {
   lat: number;
   lng: number;
   timestamp: string;
-  confidence: number; // 0..1
-  isfishing?: boolean; // Added for the vessel data
 };
 
 export type AgentPanelProps = {
@@ -65,7 +63,7 @@ export default function AgentPanel({ open, point, onClose }: AgentPanelProps) {
 
       try {
         // Step 1: Exa Search Request for laws and regulations
-        const exaSearchQuery = `maritime laws and regulations at latitude ${point.lat.toFixed(2)}, longitude ${point.lng.toFixed(2)}`;
+        const exaSearchQuery = `maritime laws and regulations at latitude ${point.lat.toFixed(4)}, longitude ${point.lng.toFixed(4)}`;
         const exaResponse = await fetch("http://127.0.0.1:8000/api/ai/exa/search", {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -84,7 +82,7 @@ export default function AgentPanel({ open, point, onClose }: AgentPanelProps) {
         await new Promise(resolve => setTimeout(resolve, 1000));
 
         // Step 2: Gemini Chat Request for agent's response
-        const chatPrompt = `An unregistered vessel (ID: ${point.id}) is located at latitude ${point.lat.toFixed(4)}, longitude ${point.lng.toFixed(4)}. It is currently ${point.isfishing ? 'fishing' : 'not fishing'}.
+        const chatPrompt = `An unregistered vessel was located at latitude ${point.lat.toFixed(4)}, longitude ${point.lng.toFixed(4)} on ${point.timestamp}. It was fishing.
         Based on the following maritime laws and regulations from Exa AI search results:
         ${fetchedExaResults.length > 0 ? fetchedExaResults.map(result => `${result.url}`).join('\n') : 'No specific laws and regulations found.'}
 
@@ -215,16 +213,7 @@ export default function AgentPanel({ open, point, onClose }: AgentPanelProps) {
                   <span className="text-gray-500">Timestamp:</span>{' '}
                   {new Date(point.timestamp).toLocaleString()}
                 </li>
-                <li>
-                  <span className="text-gray-500">Confidence:</span>{' '}
-                  {(point.confidence * 100).toFixed(0)}%
-                </li>
-                <li>
-                  <span className="text-gray-500">Classification:</span>{' '}
-                  Likely illegal fishing {point.isfishing ? '(Vessel is fishing)' : '(Vessel is not fishing)'}
-                </li>
               </ul>
-              <div className="mt-2 text-[10px] text-gray-500">source: MongoDB (simulated)</div>
             </div>
           )}
 
@@ -269,7 +258,7 @@ export default function AgentPanel({ open, point, onClose }: AgentPanelProps) {
                 relevantLaws.map((law, index) => (
                   <div key={index} className="text-[10px] px-2.5 py-1 rounded-lg border border-gray-800 text-gray-300 hover:text-white hover:border-blue-500 transition-colors"> 
                     <p>
-                      <span className="text-[12px] font-semibold">{law.title}</span>
+                      <span className="text-[12px] font-semibold">{law.title}</span> <br></br>
                       {law.summary} {law.citation} <br></br>
                       <a href={law.url} className="text-blue-300">source</a>
                     </p>

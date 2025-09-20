@@ -10,6 +10,7 @@ import os
 import google.generativeai as genai
 from exa_py import Exa
 from cleanjson import convertJSON
+import random
 
 dotenv.load_dotenv()
 
@@ -200,17 +201,13 @@ async def exa_search(request: SearchRequest):
 class Message(BaseModel):
     prompt: str
 
-def serialize_doc(doc):
+def serialize_doc(doc : dict):
     """Helper function to serialize MongoDB documents"""
     doc["_id"] = str(doc["_id"])
-    doc["lat"] = doc["latitude"]
-    del doc["latitude"]
-    doc["lng"] = doc["longitude"]
-    del doc["longitude"]
-
-    doc["legal"] = doc["matched"]
-    del doc["matched"]
-
+    doc["lat"] = doc.pop("latitude") + random.random() * 0.001
+    doc["lng"] = doc.pop("longitude") + random.random() * 0.001
+    doc["registered"] = doc.pop("matched")
+    doc["timestamp"] = doc.pop("date")
     return doc
 
 @app.get("/")
@@ -227,6 +224,7 @@ async def get_positions():
     """
     Get all position data from the database
     """
+    random.seed(4)
     docs = mongodb.getPos()
     docs = [serialize_doc(x) for x in docs]
     return docs

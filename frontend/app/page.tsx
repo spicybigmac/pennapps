@@ -11,8 +11,8 @@ const Globe = dynamic(() => import('react-globe.gl'), { ssr: false });
 interface VesselData {
   lat: number;
   lng: number;
-  isfishing: boolean;
-  legal: boolean;
+  registered: boolean;
+  timestamp: string;
   id: string; 
 }
 
@@ -21,8 +21,8 @@ interface ClusterData {
   lng: number;
   count: number;
   markers: VesselData[];
-  isfishing: boolean;
-  legal: boolean;
+  timestamp: string;
+  registered: boolean;
   closest: number;
 }
 
@@ -83,8 +83,8 @@ const HomePage: React.FC = () => {
         lng: marker.lng,
         count: 1,
         markers: [marker],
-        isfishing: marker.isfishing,
-        legal: marker.legal,
+        registered: marker.registered,
+        timestamp: marker.timestamp,
         closest: Infinity
       };
       
@@ -93,7 +93,7 @@ const HomePage: React.FC = () => {
         
         const otherMarker = markers[otherIndex];
 
-        if(cluster.legal != otherMarker.legal) continue;
+        if(cluster.registered != otherMarker.registered) continue;
         
         const R = 6371;
         const dLat = (otherMarker.lat - marker.lat) * Math.PI / 180;
@@ -108,7 +108,7 @@ const HomePage: React.FC = () => {
           cluster.count++;
           cluster.markers.push(otherMarker);
           processed.add(otherIndex);
-          cluster.legal = cluster.legal && otherMarker.legal
+          cluster.registered = cluster.registered && otherMarker.registered
           cluster.closest = Math.min(cluster.closest, distance);
         }
       }
@@ -249,7 +249,7 @@ const HomePage: React.FC = () => {
             el.innerHTML = markerSvg;
           }
           
-          el.style.color = d.legal ? "#41fc03" : "#fc0303";
+          el.style.color = d.registered ? "#41fc03" : "#fc0303";
           el.style.width = d.count > 1 ? `40px` : `30px`;
           el.style.height = 'auto';
           el.style.cursor = 'pointer';
@@ -261,14 +261,13 @@ const HomePage: React.FC = () => {
             
             if (d.count == 1) {
               setHoveredVessel(d.markers[0]);
-              if (!d.markers[0].legal) {
+              if (!d.markers[0].registered) {
                 const now = new Date();
                 const ap: AgentPoint = {
                   id: d.markers[0].id,
                   lat: d.markers[0].lat,
                   lng: d.markers[0].lng,
-                  timestamp: now.toISOString(),
-                  confidence: 0.83
+                  timestamp: d.markers[0].timestamp
                 };
                 setAgentPoint(ap);
                 setShowAgentToast(true);
@@ -302,7 +301,7 @@ const HomePage: React.FC = () => {
                 const targetPov = {
                   lat: d.lat,
                   lng: d.lng,
-                  altitude: Math.min(10000, d.closest) / clusterBase * 0.5
+                  altitude: Math.max(Math.min(10000, d.closest) / clusterBase * 0.5, currentPov.altitude * 0.2)
                 };
 
                 const duration = 1200;
@@ -366,8 +365,8 @@ const HomePage: React.FC = () => {
           }}
         >
 
-          <div style={{ fontWeight: 'bold', marginBottom: '12px', color: hoveredVessel.legal ? '#51cf66' : '#ff6b6b', fontSize: '16px' }}>
-            {hoveredVessel.legal ? 'Registered' : 'Unregistered'}
+          <div style={{ fontWeight: 'bold', marginBottom: '12px', color: hoveredVessel.registered ? '#51cf66' : '#ff6b6b', fontSize: '16px' }}>
+            {hoveredVessel.registered ? 'Registered' : 'Unregistered'}
           </div>
 
           <div
@@ -391,16 +390,9 @@ const HomePage: React.FC = () => {
           <div style={{ marginBottom: '10px' }}>
             <strong>Location:</strong> {hoveredVessel.lat.toFixed(4)}°, {hoveredVessel.lng.toFixed(4)}°
           </div>
-          
+
           <div style={{ marginBottom: '10px' }}>
-            <strong>Status:</strong> 
-            <span style={{ 
-              color: hoveredVessel.isfishing ? '#ff6b6b' : '#51cf66',
-              marginLeft: '8px',
-              fontWeight: 'bold'
-            }}>
-              {hoveredVessel.isfishing ? 'Fishing' : 'Not Fishing'}
-            </span>
+            <strong>Timestamp:</strong> {hoveredVessel.timestamp}
           </div>
           
           {/* Agent Chat trigger removed */}
@@ -439,7 +431,7 @@ const HomePage: React.FC = () => {
       {showAgentToast && agentPoint && (
         <AgentToast
           title="Unregistered Vessel Detected"
-          subtitle={`Lat ${agentPoint.lat.toFixed(2)}, Lng ${agentPoint.lng.toFixed(2)} • ${(agentPoint.confidence * 100).toFixed(0)}% conf.`}
+          subtitle={`${agentPoint.lat.toFixed(4)}°, ${agentPoint.lng.toFixed(4)}°, ${agentPoint.timestamp}`}
           onOpen={() => { setIsAgentPanelOpen(true); setShowAgentToast(false); }}
           onDismiss={() => setShowAgentToast(false)}
         />
