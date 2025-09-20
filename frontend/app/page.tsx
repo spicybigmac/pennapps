@@ -7,14 +7,15 @@ import * as topojson from 'topojson-client';
 const Globe = dynamic(() => import('react-globe.gl'), { ssr: false });
 
 const HomePage: React.FC = () => {
-  const globeEl = useRef();
-  const [landData, setLandData] = useState({ features: [] });
+  const globeEl = useRef<any>(null);
+  const [landData, setLandData] = useState<{ features: any[] }>({ features: [] });
 
   useEffect(() => {
-    fetch('//cdn.jsdelivr.net/npm/world-atlas/land-110m.json')
-      .then(res => res.json())
-      .then(landTopo => {
-        setLandData(topojson.feature(landTopo, landTopo.objects.land));
+    fetch('https://cdn.jsdelivr.net/npm/world-atlas/land-110m.json')
+      .then((res) => res.json())
+      .then((landTopo) => {
+        const featureCollection = topojson.feature(landTopo, landTopo.objects.land);
+        setLandData(featureCollection as { features: any[] });
       });
   }, []);
 
@@ -29,17 +30,17 @@ const HomePage: React.FC = () => {
         showAtmosphere={false}
         backgroundColor={'rgba(0,0,0,0)'}
 
-        // Polygon rendering for landmasses
+        // Land polygons
         polygonsData={landData.features}
-        polygonCapColor={() => 'rgba(130, 130, 130, 0.5)'} // Landmass fill color
-        polygonSideColor={() => 'rgba(0,0,0,0)'} // Keep sides transparent
-        polygonAltitude={0} // Small altitude for stroke visibility
-        polygonStrokeColor={() => 'rgba(255, 255, 255, 1)'} // White stroke color
+        polygonCapColor={() => 'rgba(130, 130, 130, 0.5)'}
+        polygonSideColor={() => 'rgba(0,0,0,0)'}
+        polygonAltitude={0}
+        polygonStrokeColor={() => 'rgba(255, 255, 255, 1)'}
 
-        // Graticule (longitude and latitude lines) properties
-        showGraticules={true} // Enable graticule lines
-        graticuleColor={() => 'rgba(255, 255, 255, 0.5)'} // Light grey with some transparency
-        graticuleLineResolution={20} // Lines every 10 degrees (adjust as needed)
+        // Graticules
+        showGraticules={true}
+        graticuleColor={() => 'rgba(255, 255, 255, 0.5)'}
+        graticuleLineResolution={20}
       />
     </div>
   );
