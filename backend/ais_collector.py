@@ -66,37 +66,53 @@ class GlobalFishingWatchAPI:
         """Get raw SAR vessel detections from API"""
         self._check_rate_limit()
         
-        url = f"{self.base_url}/v1/4wings/report"
+        # Try multiple possible endpoints and dataset versions
+        endpoints_to_try = [
+            ("v1/4wings/report", "public-sar-vessel-detections:v20231026"),
+            ("v1/4wings/report", "public-sar-vessel-detections:v20240101"),
+            ("v2/4wings/report", "public-sar-vessel-detections:v20231026"),
+            ("v1/sar-vessel-detections", "public-sar-vessel-detections:v20231026")
+        ]
+        
         bbox_str = f"{zone.bbox[0]},{zone.bbox[1]},{zone.bbox[2]},{zone.bbox[3]}"
         
-        payload = {
-            "datasets": ["public-sar-vessel-detections:v20231026"],
-            "bbox": bbox_str,
-            "start-date": start_date,
-            "end-date": end_date,
-            "format": "json",
-            "spatial-resolution": "high",
-            "temporal-resolution": "daily"
-        }
-        
-        try:
-            async with aiohttp.ClientSession() as session:
-                async with session.post(url, headers=self.headers, json=payload) as response:
-                    self.requests_this_minute += 1
-                    
-                    if response.status == 200:
-                        data = await response.json()
-                        positions = self._parse_sar_positions(data, zone)
-                        logger.info(f"Retrieved {len(positions)} SAR positions for {zone.name}")
-                        return positions
-                    else:
-                        error_text = await response.text()
-                        logger.error(f"SAR API error for {zone.name}: {response.status} - {error_text}")
-                        return []
+        for endpoint, dataset in endpoints_to_try:
+            url = f"{self.base_url}/{endpoint}"
+            payload = {
+                "datasets": [dataset],
+                "bbox": bbox_str,
+                "start-date": start_date,
+                "end-date": end_date,
+                "format": "json",
+                "spatial-resolution": "high",
+                "temporal-resolution": "daily"
+            }
+            
+            try:
+                async with aiohttp.ClientSession() as session:
+                    async with session.post(url, headers=self.headers, json=payload) as response:
+                        self.requests_this_minute += 1
                         
-        except Exception as e:
-            logger.error(f"Error fetching SAR data for {zone.name}: {e}")
-            return []
+                        if response.status == 200:
+                            data = await response.json()
+                            positions = self._parse_sar_positions(data, zone)
+                            logger.info(f"Retrieved {len(positions)} SAR positions for {zone.name} using {endpoint}")
+                            return positions
+                        elif response.status == 404:
+                            logger.warning(f"SAR API endpoint {endpoint} not found for {zone.name}, trying next...")
+                            continue
+                        else:
+                            error_text = await response.text()
+                            logger.warning(f"SAR API error for {zone.name} with {endpoint}: {response.status} - {error_text}")
+                            continue
+                            
+            except Exception as e:
+                logger.warning(f"Error fetching SAR data for {zone.name} with {endpoint}: {e}")
+                continue
+        
+        # If all endpoints fail, log and return empty
+        logger.error(f"All SAR API endpoints failed for {zone.name}. SAR data unavailable.")
+        return []
     
     async def get_ais_presence_raw(self, zone: MonitoringZone,
                                   start_date: str, end_date: str) -> List[Dict]:

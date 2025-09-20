@@ -233,7 +233,35 @@ const HomePage: React.FC = () => {
             if (d.count == 1) {
               // Handle single vessel click
               setHoveredVessel(d.markers[0]);
-              setPopupPosition({ x: e.clientX, y: e.clientY });
+              
+              // Calculate smart positioning based on screen position
+              const popupHeight = 300; // Approximate popup height
+              const popupWidth = 320; // Approximate popup width
+              const screenHeight = window.innerHeight;
+              const screenWidth = window.innerWidth;
+              
+              let x = e.clientX + 15;
+              let y = e.clientY - 10;
+              
+              // Adjust horizontal position if popup would go off screen
+              if (x + popupWidth > screenWidth) {
+                x = e.clientX - popupWidth - 15; // Position to the left instead
+              }
+              
+              // Adjust vertical position based on screen half
+              if (e.clientY > screenHeight / 2) {
+                // Bottom half - position popup above the click
+                y = e.clientY - popupHeight - 10;
+              } else {
+                // Top half - position popup below the click
+                y = e.clientY - 10;
+              }
+              
+              // Ensure popup stays within screen bounds
+              y = Math.max(10, Math.min(y, screenHeight - popupHeight - 10));
+              x = Math.max(10, Math.min(x, screenWidth - popupWidth - 10));
+              
+              setPopupPosition({ x, y });
             } else {
               // INSERT_YOUR_CODE
               // Gradually zoom onto the cluster when a cluster is clicked
