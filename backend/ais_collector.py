@@ -63,83 +63,88 @@ class GlobalFishingWatchAPI:
     
     async def get_sar_detections_raw(self, zone: MonitoringZone, 
                                    start_date: str, end_date: str) -> List[Dict]:
-        """Get raw SAR vessel detections from API"""
+        """Get raw SAR vessel detections from API using correct v3 format"""
         self._check_rate_limit()
         
-        # Try multiple possible endpoints and dataset versions
-        endpoints_to_try = [
-            ("v1/4wings/report", "public-sar-vessel-detections:v20231026"),
-            ("v1/4wings/report", "public-sar-vessel-detections:v20240101"),
-            ("v2/4wings/report", "public-sar-vessel-detections:v20231026"),
-            ("v1/sar-vessel-detections", "public-sar-vessel-detections:v20231026")
-        ]
+        # Use the correct v3 API format based on working test
+        url = f"{self.base_url}/v3/4wings/report"
         
-        bbox_str = f"{zone.bbox[0]},{zone.bbox[1]},{zone.bbox[2]},{zone.bbox[3]}"
+        # Query parameters (not JSON body)
+        params = {
+            "spatial-resolution": "HIGH",
+            "temporal-resolution": "DAILY", 
+            "datasets[0]": "public-global-sar-presence:latest",
+            "date-range": f"{start_date},{end_date}",
+            "format": "JSON",
+            "group-by": "VESSEL_ID"
+        }
         
-        for endpoint, dataset in endpoints_to_try:
-            url = f"{self.base_url}/{endpoint}"
-            payload = {
-                "datasets": [dataset],
-                "bbox": bbox_str,
-                "start-date": start_date,
-                "end-date": end_date,
-                "format": "json",
-                "spatial-resolution": "high",
-                "temporal-resolution": "daily"
+        # JSON body for region specification - use bbox format like in working test
+        bbox = zone.bbox
+        data = {
+            "region": {
+                "dataset": "public-eez-areas",
+                "id": 8465  # Use a specific EEZ area ID like in the working test
             }
-            
-            try:
-                async with aiohttp.ClientSession() as session:
-                    async with session.post(url, headers=self.headers, json=payload) as response:
-                        self.requests_this_minute += 1
-                        
-                        if response.status == 200:
-                            data = await response.json()
-                            positions = self._parse_sar_positions(data, zone)
-                            logger.info(f"Retrieved {len(positions)} SAR positions for {zone.name} using {endpoint}")
-                            return positions
-                        elif response.status == 404:
-                            logger.warning(f"SAR API endpoint {endpoint} not found for {zone.name}, trying next...")
-                            continue
-                        else:
-                            error_text = await response.text()
-                            logger.warning(f"SAR API error for {zone.name} with {endpoint}: {response.status} - {error_text}")
-                            continue
-                            
-            except Exception as e:
-                logger.warning(f"Error fetching SAR data for {zone.name} with {endpoint}: {e}")
-                continue
-        
-        # If all endpoints fail, log and return empty
-        logger.error(f"All SAR API endpoints failed for {zone.name}. SAR data unavailable.")
-        return []
-    
-    async def get_ais_presence_raw(self, zone: MonitoringZone,
-                                  start_date: str, end_date: str) -> List[Dict]:
-        """Get raw AIS vessel presence from API"""
-        self._check_rate_limit()
-        
-        url = f"{self.base_url}/v1/4wings/report"
-        bbox_str = f"{zone.bbox[0]},{zone.bbox[1]},{zone.bbox[2]},{zone.bbox[3]}"
-        
-        payload = {
-            "datasets": ["public-ais-vessel-presence:v20231026"],
-            "bbox": bbox_str,
-            "start-date": start_date,
-            "end-date": end_date,
-            "format": "json",
-            "spatial-resolution": "high",
-            "temporal-resolution": "daily"
         }
         
         try:
             async with aiohttp.ClientSession() as session:
-                async with session.post(url, headers=self.headers, json=payload) as response:
+                async with session.post(url, headers=self.headers, params=params, json=data) as response:
                     self.requests_this_minute += 1
                     
                     if response.status == 200:
-                        data = await response.json()
-                        positions = self._parse_ais_positions(data, zone)
+                        response_data = await response.json()
+                        logger.info(f"SAR Response structure: {list(response_data.keys())}")
+                        if response_data.get("entries"):
+                            logger.info(f"First entry keys: {list(response_data['entries'][0].keys()) if response_data['entries'] else 'No entries'}")
+                        positions = self._parse_sar_positions(response_data, zone)
+                        logger.info(f"Retrieved {len(positions)} SAR positions for {zone.name}")
+                        return positions
+                    else:
+                        error_text = await response.text()
+                        logger.error(f"SAR API error for {zone.name}: {response.status} - {error_text}")
+                        return []
+                        
+        except Exception as e:
+            logger.error(f"Error fetching SAR data for {zone.name}: {e}")
+            return []
+    
+    async def get_ais_presence_raw(self, zone: MonitoringZone,
+                                  start_date: str, end_date: str) -> List[Dict]:
+        """Get raw AIS vessel presence from API using correct v3 format"""
+        self._check_rate_limit()
+        
+        # Use the correct v3 API format
+        url = f"{self.base_url}/v3/4wings/report"
+        
+        # Query parameters (not JSON body)
+        params = {
+            "spatial-resolution": "HIGH",
+            "temporal-resolution": "DAILY",
+            "datasets[0]": "public-ais-vessel-presence:latest", 
+            "date-range": f"{start_date},{end_date}",
+            "format": "JSON",
+            "group-by": "VESSEL_ID"
+        }
+        
+        # JSON body for region specification - use bbox format like in working test
+        bbox = zone.bbox
+        data = {
+            "region": {
+                "dataset": "public-eez-areas",
+                "id": 8465  # Use a specific EEZ area ID like in the working test
+            }
+        }
+        
+        try:
+            async with aiohttp.ClientSession() as session:
+                async with session.post(url, headers=self.headers, params=params, json=data) as response:
+                    self.requests_this_minute += 1
+                    
+                    if response.status == 200:
+                        response_data = await response.json()
+                        positions = self._parse_ais_positions(response_data, zone)
                         logger.info(f"Retrieved {len(positions)} AIS positions for {zone.name}")
                         return positions
                     else:
@@ -155,34 +160,44 @@ class GlobalFishingWatchAPI:
         """Parse SAR detection API response into position dictionaries"""
         positions = []
         
+        # The new API response structure has entries with dataset-specific data
         for entry in data.get("entries", []):
             try:
-                # Generate unique ID for SAR detection
-                timestamp_str = entry.get("date", "")
-                lat = float(entry.get("lat", 0))
-                lon = float(entry.get("lon", 0))
-                position_id = f"sar_{zone.name}_{timestamp_str}_{lat:.6f}_{lon:.6f}"
-                
-                position = {
-                    "id": position_id,
-                    "source": "SAR",
-                    "lat": lat,
-                    "lon": lon,
-                    "timestamp": datetime.fromisoformat(entry.get("date", "")),
-                    "zone_name": zone.name,
-                    "confidence": entry.get("confidence"),
-                    "vessel_length_m": entry.get("vessel_length_m"),
-                    "mmsi": entry.get("mmsi"),  # May be None if no AIS match
-                    "vessel_type": entry.get("vessel_type"),
-                    "vessel_name": entry.get("vessel_name"),
-                    "flag": entry.get("flag"),
-                    "imo": entry.get("imo"),
-                    "callsign": entry.get("callsign"),
-                    "ais_matched": entry.get("ais_matched", False),  # Key field for classification
-                    "is_fishing": entry.get("is_fishing"),
-                    "raw_data": entry  # Store complete API response
-                }
-                positions.append(position)
+                logger.info(f"Processing entry: {entry}")
+                # Each entry contains dataset-specific data
+                for dataset_name, dataset_entries in entry.items():
+                    logger.info(f"Found dataset: {dataset_name}, entries type: {type(dataset_entries)}")
+                    if "sar-presence" in dataset_name.lower() or "public-global-sar-presence" in dataset_name:
+                        logger.info(f"Processing SAR dataset: {dataset_name} with {len(dataset_entries) if dataset_entries else 0} entries")
+                        if dataset_entries:  # Check if dataset_entries is not None
+                            for sar_entry in dataset_entries:
+                                # Generate unique ID for SAR detection
+                                timestamp_str = sar_entry.get("date", "")
+                                lat = float(sar_entry.get("lat", 0))
+                                lon = float(sar_entry.get("lon", 0))
+                                position_id = f"sar_{zone.name}_{timestamp_str}_{lat:.6f}_{lon:.6f}"
+                            
+                                position = {
+                                    "id": position_id,
+                                    "source": "SAR",
+                                    "lat": lat,
+                                    "lon": lon,
+                                    "timestamp": self._parse_timestamp(timestamp_str),
+                                    "zone_name": zone.name,
+                                    "confidence": sar_entry.get("confidence"),
+                                    "vessel_length_m": sar_entry.get("vessel_length_m"),
+                                    "mmsi": sar_entry.get("mmsi", ""),
+                                    "vessel_type": sar_entry.get("vesselType", ""),
+                                    "vessel_name": sar_entry.get("shipName", ""),
+                                    "flag": sar_entry.get("flag", ""),
+                                    "imo": sar_entry.get("imo", ""),
+                                    "callsign": sar_entry.get("callsign", ""),
+                                    "ais_matched": bool(sar_entry.get("mmsi")),  # Has MMSI = AIS matched
+                                    "is_fishing": sar_entry.get("is_fishing", False),
+                                    "detections": sar_entry.get("detections", 1),
+                                    "raw_data": sar_entry
+                                }
+                                positions.append(position)
                 
             except Exception as e:
                 logger.warning(f"Error parsing SAR position: {e}")
@@ -190,37 +205,57 @@ class GlobalFishingWatchAPI:
         
         return positions
     
+    def _parse_timestamp(self, timestamp_str: str) -> datetime:
+        """Parse timestamp string to datetime object"""
+        try:
+            # Try ISO format first
+            if "T" in timestamp_str:
+                return datetime.fromisoformat(timestamp_str.replace("Z", "+00:00"))
+            # Try date only format
+            elif len(timestamp_str) == 10:
+                return datetime.strptime(timestamp_str, "%Y-%m-%d")
+            else:
+                return datetime.fromisoformat(timestamp_str)
+        except:
+            # Fallback to current time
+            return datetime.utcnow()
+    
     def _parse_ais_positions(self, data: Dict, zone: MonitoringZone) -> List[Dict]:
         """Parse AIS presence API response into position dictionaries"""
         positions = []
         
+        # The new API response structure has entries with dataset-specific data
         for entry in data.get("entries", []):
             try:
-                # Generate unique ID for AIS position
-                timestamp_str = entry.get("date", "")
-                mmsi = entry.get("mmsi", "unknown")
-                position_id = f"ais_{zone.name}_{timestamp_str}_{mmsi}"
-                
-                position = {
-                    "id": position_id,
-                    "source": "AIS",
-                    "lat": float(entry.get("lat", 0)),
-                    "lon": float(entry.get("lon", 0)),
-                    "timestamp": datetime.fromisoformat(entry.get("date", "")),
-                    "zone_name": zone.name,
-                    "confidence": 1.0,  # AIS is always high confidence
-                    "vessel_length_m": entry.get("vessel_length_m"),
-                    "mmsi": entry.get("mmsi"),
-                    "vessel_type": entry.get("vessel_type"),
-                    "vessel_name": entry.get("vessel_name"),
-                    "flag": entry.get("flag"),
-                    "imo": entry.get("imo"),
-                    "callsign": entry.get("callsign"),
-                    "ais_matched": True,  # AIS is by definition matched
-                    "is_fishing": entry.get("is_fishing"),
-                    "raw_data": entry  # Store complete API response
-                }
-                positions.append(position)
+                # Each entry contains dataset-specific data
+                for dataset_name, dataset_entries in entry.items():
+                    if "ais-presence" in dataset_name.lower() or "public-ais-vessel-presence" in dataset_name:
+                        for ais_entry in dataset_entries:
+                            # Generate unique ID for AIS position
+                            timestamp_str = ais_entry.get("date", "")
+                            mmsi = ais_entry.get("mmsi", "unknown")
+                            position_id = f"ais_{zone.name}_{timestamp_str}_{mmsi}"
+                            
+                            position = {
+                                "id": position_id,
+                                "source": "AIS",
+                                "lat": float(ais_entry.get("lat", 0)),
+                                "lon": float(ais_entry.get("lon", 0)),
+                                "timestamp": self._parse_timestamp(timestamp_str),
+                                "zone_name": zone.name,
+                                "confidence": 1.0,  # AIS is always high confidence
+                                "vessel_length_m": ais_entry.get("vessel_length_m"),
+                                "mmsi": ais_entry.get("mmsi", ""),
+                                "vessel_type": ais_entry.get("vesselType", ""),
+                                "vessel_name": ais_entry.get("shipName", ""),
+                                "flag": ais_entry.get("flag", ""),
+                                "imo": ais_entry.get("imo", ""),
+                                "callsign": ais_entry.get("callsign", ""),
+                                "ais_matched": True,  # AIS is by definition matched
+                                "is_fishing": ais_entry.get("is_fishing", False),
+                                "raw_data": ais_entry
+                            }
+                            positions.append(position)
                 
             except Exception as e:
                 logger.warning(f"Error parsing AIS position: {e}")

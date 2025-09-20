@@ -8,6 +8,7 @@ export type AgentPoint = {
   lng: number;
   timestamp: string;
   confidence: number; // 0..1
+  isfishing?: boolean; // Added for the vessel data
 };
 
 export type AgentPanelProps = {
@@ -24,66 +25,100 @@ export default function AgentPanel({ open, point, onClose }: AgentPanelProps) {
   const [steps, setSteps] = useState<StepState[]>(['pending', 'pending', 'pending', 'pending', 'pending']);
   const [completed, setCompleted] = useState(false);
 
+  // New states for API fetching
+  const [agentResponse, setAgentResponse] = useState<string | null>(null);
+  const [isLoadingAgentResponse, setIsLoadingAgentResponse] = useState(false);
+  const [relevantLaws, setRelevantLaws] = useState<string[]>([]);
+
   useEffect(() => {
-    if (!open || !point) return;
+    if (!open || !point) {
+      // Reset states when panel is closed or point is null
+      setShowSummary(false);
+      setShowLaws(false);
+      setSteps(['pending', 'pending', 'pending', 'pending', 'pending']);
+      setCompleted(false);
+      setAgentResponse(null);
+      setIsLoadingAgentResponse(false);
+      setRelevantLaws([]);
+      return;
+    }
 
-    setShowSummary(false);
-    setShowLaws(false);
-    setSteps(['pending', 'pending', 'pending', 'pending', 'pending']);
-    setCompleted(false);
+    const fetchData = async () => {
+      setAgentResponse('Loading agent response...');
+      setIsLoadingAgentResponse(true);
+      setShowSummary(true); // Show summary immediately
+      setSteps(['active', 'pending', 'pending', 'pending', 'pending']); // Step 1 active
 
-    const timers: number[] = [];
-    // Stagger summary and legal basis
-    timers.push(window.setTimeout(() => setShowSummary(true), 300));
-    timers.push(window.setTimeout(() => setShowLaws(true), 1200));
+      try {
+        // Step 1: Exa Search Request for laws and regulations
+        // Update: This step is now represented by fetching actual laws
+        const exaSearchQuery = `maritime laws and regulations at latitude ${point.lat.toFixed(2)}, longitude ${point.lng.toFixed(2)}`;
+        const exaResponse = await fetch("http://127.0.0.1:8000/api/ai/exa/search", {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ query: exaSearchQuery, num_results: 3 }), // Limit results for brevity
+        });
+        const exaData = await exaResponse.json();
 
-    // Sequentially progress through steps
-    const advance = (index: number) => {
-      setSteps((prev) => {
-        const next = [...prev];
-        for (let i = 0; i < next.length; i++) {
-          if (i < index) next[i] = 'done';
-          else if (i === index) next[i] = 'active';
-          else next[i] = 'pending';
+        let fetchedLaws: string[] = [];
+        if (exaData && exaData.results && exaData.results.length > 0) {
+          fetchedLaws = exaData.results.map((result: any) => result.text || result.url);
         }
-        return next;
-      });
-    };
+        setRelevantLaws(fetchedLaws);
+        setShowLaws(true); // Show legal basis after fetching
+        setSteps(['done', 'active', 'pending', 'pending', 'pending']); // Step 1 done, Step 2 active
 
-    // Each step a few seconds apart
-    const schedule = [0, 2200, 4200, 6200, 8200];
-    schedule.forEach((t, i) => {
-      timers.push(window.setTimeout(() => advance(i), 900 + t));
-    });
-    timers.push(
-      window.setTimeout(() => {
-        setSteps(['done', 'done', 'done', 'done', 'done']);
+        // Introduce a slight delay for visual progression (mimicking old timers)
+        await new Promise(resolve => setTimeout(resolve, 1000));
+
+        // Step 2: Gemini Chat Request for agent's response
+        const chatPrompt = `An unregistered vessel (ID: ${point.id}) is located at latitude ${point.lat.toFixed(4)}, longitude ${point.lng.toFixed(4)}. It is currently ${point.isfishing ? 'fishing' : 'not fishing'}.
+        Based on the following maritime laws and regulations:
+        ${fetchedLaws.length > 0 ? fetchedLaws.join('\n\n') : 'No specific laws and regulations found.'}
+
+        Please simulate an agent's response to this unregistered vessel. The response should be informative, authoritative, and suggest appropriate actions or warnings.`;
+
+        const geminiResponse = await fetch("http://127.0.0.1:8000/api/ai/gemini/chat", {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ prompt: chatPrompt, user_id: point.id}),
+        });
+        const geminiData = await geminiResponse.json();
+
+        if (geminiData && geminiData.response) {
+          setAgentResponse(geminiData.response);
+        } else {
+          setAgentResponse("Failed to get a response from the agent.");
+        }
+        setSteps(['done', 'done', 'active', 'pending', 'pending']); // Step 2 done, Step 3 active
+
+        // Simulate the remaining steps of the workflow
+        await new Promise(resolve => setTimeout(resolve, 1500));
+        setSteps(['done', 'done', 'done', 'active', 'pending']); // Step 3 done, Step 4 active
+        await new Promise(resolve => setTimeout(resolve, 1500));
+        setSteps(['done', 'done', 'done', 'done', 'active']); // Step 4 done, Step 5 active
+        await new Promise(resolve => setTimeout(resolve, 1500));
+        setSteps(['done', 'done', 'done', 'done', 'done']); // Step 5 done
         setCompleted(true);
-      }, 900 + schedule[schedule.length - 1] + 1400)
-    );
 
-    return () => {
-      timers.forEach((id) => window.clearTimeout(id));
+      } catch (error) {
+        console.error('Error in agent chat process:', error);
+        setAgentResponse("An error occurred while getting the agent's response.");
+        // Set all steps to 'pending' or 'error' state if you want to show an error visually
+        setSteps(['pending', 'pending', 'pending', 'pending', 'pending']);
+        setCompleted(false); // Indicate failure
+      } finally {
+        setIsLoadingAgentResponse(false);
+      }
     };
+
+    fetchData();
+
+    // No need for a return cleanup with `timers` as the fetch is handled by `fetchData`'s lifecycle
   }, [open, point]);
 
-  const laws = useMemo(
-    () => [
-      {
-        title: 'UN Fish Stocks Agreement Art. 18',
-        href: 'https://www.un.org/Depts/los/convention_agreements/fish_stocks_agreement.htm'
-      },
-      {
-        title: 'FAO Port State Measures Agreement Art. 9',
-        href: 'https://www.fao.org/port-state-measures/en/'
-      },
-      {
-        title: 'Magnuson–Stevens Act 16 U.S.C. §1857',
-        href: 'https://uscode.house.gov/view.xhtml?req=granuleid:USC-prelim-title16-section1857&num=0&edition=prelim'
-      }
-    ],
-    []
-  );
+  // Removed useMemo for 'laws' as we are now fetching them dynamically
+  // The 'laws' displayed in the Legal Basis section will now come from `relevantLaws` state
 
   const StepIcon = ({ state }: { state: StepState }) => {
     if (state === 'active') {
@@ -150,7 +185,7 @@ export default function AgentPanel({ open, point, onClose }: AgentPanelProps) {
                 </li>
                 <li>
                   <span className="text-gray-500">Classification:</span>{' '}
-                  Likely illegal fishing
+                  Likely illegal fishing {point.isfishing ? '(Vessel is fishing)' : '(Vessel is not fishing)'}
                 </li>
               </ul>
               <div className="mt-2 text-[10px] text-gray-500">source: MongoDB (simulated)</div>
@@ -167,18 +202,21 @@ export default function AgentPanel({ open, point, onClose }: AgentPanelProps) {
           >
             <div className="text-sm font-semibold mb-2">Legal Basis (via Exa AI)</div>
             <div className="flex flex-wrap gap-1">
-              {laws.map((law) => (
-                <a
-                  key={law.href}
-                  href={law.href}
-                  target="_blank"
-                  rel="noreferrer"
-                  className="text-[10px] px-2.5 py-1 rounded-full border border-gray-800 text-gray-300 hover:text-white hover:border-gray-700 transition-colors"
-                >
-                  {law.title}
-                </a>
-              ))}
+              {relevantLaws.length > 0 ? (
+                relevantLaws.map((law, index) => (
+                  // Assuming laws can be just text, if they are URLs, you'd need to parse them
+                  <span
+                    key={index}
+                    className="text-[10px] px-2.5 py-1 rounded-full border border-gray-800 text-gray-300"
+                  >
+                    {law.length > 50 ? law.substring(0, 50) + '...' : law}
+                  </span>
+                ))
+              ) : (
+                <span className="text-xs text-gray-500">No specific laws and regulations found.</span>
+              )}
             </div>
+            {relevantLaws.length > 0 && <div className="mt-2 text-[10px] text-gray-500">Full text/URL in agent log</div>}
           </div>
 
           {/* Dispatch Workflow */}
@@ -187,39 +225,41 @@ export default function AgentPanel({ open, point, onClose }: AgentPanelProps) {
             <ol className="space-y-2">
               <li className="flex items-center gap-2 text-xs text-gray-300">
                 <StepIcon state={steps[0]} />
-                <span>Data being sent to Coast Guard</span>
+                <span>Exa AI searching for relevant maritime laws</span>
               </li>
               <li className="flex items-center gap-2 text-xs text-gray-300" style={{ opacity: steps[1] === 'pending' ? 0.4 : 1, transition: 'opacity 220ms ease' }}>
                 <StepIcon state={steps[1]} />
-                <span>Coast Guard received data and satellite GPS synced</span>
+                <span>Gemini AI generating agent response</span>
               </li>
               <li className="flex items-center gap-2 text-xs text-gray-300" style={{ opacity: steps[2] === 'pending' ? 0.4 : 1, transition: 'opacity 220ms ease' }}>
                 <StepIcon state={steps[2]} />
-                <span>Confidential users alerted about this request</span>
+                <span>Coast Guard received data and satellite GPS synced</span>
               </li>
               <li className="flex items-center gap-2 text-xs text-gray-300" style={{ opacity: steps[3] === 'pending' ? 0.4 : 1, transition: 'opacity 220ms ease' }}>
                 <StepIcon state={steps[3]} />
-                <span>Agent log saved to MongoDB database</span>
+                <span>Confidential users alerted about this request</span>
               </li>
               <li className="flex items-center gap-2 text-xs text-gray-300" style={{ opacity: steps[4] === 'pending' ? 0.4 : 1, transition: 'opacity 220ms ease' }}>
                 <StepIcon state={steps[4]} />
-                <span>Data sent to MongoDB pattern recognition model</span>
+                <span>Agent log saved to MongoDB database and sent to pattern recognition model</span>
               </li>
             </ol>
           </div>
 
-          {/* Summary */}
+          {/* Agent Response */}
           <div
             className="border border-gray-900 rounded-lg p-4 bg-black/60 anim-slide-up"
             style={{
-              opacity: completed ? 1 : 0,
+              opacity: agentResponse ? 1 : 0,
               transition: 'opacity 260ms ease',
             }}
           >
-            <div className="text-sm font-semibold mb-2">Summary</div>
-            <p className="text-xs text-gray-300">
-              Process completed. Coast Guard is on their way to investigate. ETA ~30 minutes.
-            </p>
+            <div className="text-sm font-semibold mb-2">Agent's Message</div>
+            {isLoadingAgentResponse ? (
+              <p className="text-xs text-gray-400 animate-pulse">{agentResponse}</p>
+            ) : (
+              <p className="text-xs text-gray-300 whitespace-pre-wrap">{agentResponse}</p>
+            )}
           </div>
         </div>
       </div>
@@ -236,5 +276,3 @@ export default function AgentPanel({ open, point, onClose }: AgentPanelProps) {
     </div>
   );
 }
-
-
