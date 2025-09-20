@@ -190,8 +190,11 @@ def serialize_doc(doc):
     del doc["latitude"]
     doc["lng"] = doc["longitude"]
     del doc["longitude"]
-    return doc
 
+    doc["legal"] = doc["matched"]
+    del doc["matched"]
+
+    return doc
 
 @app.get("/")
 async def root():

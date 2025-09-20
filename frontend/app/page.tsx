@@ -51,7 +51,9 @@ const HomePage: React.FC = () => {
     <text x="14" y="18" text-anchor="middle" fill="white" font-size="10" font-weight="bold">${count}</text>
   </svg>`;
 
-  const clusterMarkers = (markers: VesselData[], clusterThreshold: number = 1200) => {
+  const clusterBase = 1000;
+
+  const clusterMarkers = (markers: VesselData[], clusterThreshold: number = clusterBase * 2.5) => {
     if (markers.length === 0) return [];
     
     const clusters: ClusterData[] = [];
@@ -75,6 +77,8 @@ const HomePage: React.FC = () => {
         if (otherIndex === index || processed.has(otherIndex)) continue;
         
         const otherMarker = markers[otherIndex];
+
+        if(cluster.legal != otherMarker.legal) continue;
         
         const R = 6371;
         const dLat = (otherMarker.lat - marker.lat) * Math.PI / 180;
@@ -115,8 +119,24 @@ const HomePage: React.FC = () => {
 
         const lat = Math.asin(z) * 180 / Math.PI;
         const lng = Math.atan2(y, x) * 180 / Math.PI;
-        cluster.lat = lat;
-        cluster.lng = lng;
+        
+        var mndis = Infinity;
+
+        for (const m of cluster.markers) {
+          const R = 6371;
+          const dLat = (lat - m.lat) * Math.PI / 180;
+          const dLng = (lng - m.lng) * Math.PI / 180;
+          const a = Math.sin(dLat/2) * Math.sin(dLat/2) +
+                    Math.cos(m.lat * Math.PI / 180) * Math.cos(lat * Math.PI / 180) *
+                    Math.sin(dLng/2) * Math.sin(dLng/2);
+          const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+          const distance = R * c;
+          if(distance < mndis){
+            mndis = distance;
+            cluster.lat = m.lat;
+            cluster.lng = m.lng;
+          }
+        }
       }
       
       clusters.push(cluster);
@@ -127,7 +147,7 @@ const HomePage: React.FC = () => {
   };
 
   const handleZoom = (pov : any) => {
-    const newThreshold = Math.min(5000, Math.round(500 * pov.altitude / 200) * 200);
+    const newThreshold = Math.min(10000, Math.round(clusterBase * pov.altitude / 10) * 10);
     if(newThreshold != clusterThreshold){
       setClusterThreshold(newThreshold);
       clusterMarkers(vesselData, newThreshold);
@@ -272,7 +292,7 @@ const HomePage: React.FC = () => {
                 const targetPov = {
                   lat: d.lat,
                   lng: d.lng,
-                  altitude: Math.min(5000, d.closest) / 500 * 0.5
+                  altitude: Math.min(10000, d.closest) / clusterBase * 0.5
                 };
 
                 const duration = 1200;
@@ -408,7 +428,7 @@ const HomePage: React.FC = () => {
       <AgentPanel open={isAgentPanelOpen} point={agentPoint} onClose={() => setIsAgentPanelOpen(false)} />
       {showAgentToast && agentPoint && (
         <AgentToast
-          title="Illegal Vessel Detected"
+          title="Unregistered Vessel Detected"
           subtitle={`Lat ${agentPoint.lat.toFixed(2)}, Lng ${agentPoint.lng.toFixed(2)} • ${(agentPoint.confidence * 100).toFixed(0)}% conf.`}
           onOpen={() => { setIsAgentPanelOpen(true); setShowAgentToast(false); }}
           onDismiss={() => setShowAgentToast(false)}
