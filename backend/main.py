@@ -7,6 +7,7 @@ import dotenv
 import os
 import google.generativeai as genai
 from exa_py import Exa
+from cleanjson import convertJSON
 
 dotenv.load_dotenv()
 
@@ -16,7 +17,7 @@ from api_routes import mongodb
 
 # Configure Gemini
 genai.configure(api_key=os.getenv("GEMINI_API_KEY"))
-model = genai.GenerativeModel("gemini-2.5-flash")
+model = genai.GenerativeModel("gemini-2.5-flash-lite")
 
 # Configure Exa
 exa = Exa(api_key=os.getenv("EXA_API_KEY"))
@@ -130,17 +131,11 @@ async def gemini_chat(request: ChatRequest):
         ai_response = response.candidates[0].content.parts[0].text
     else:
         ai_response = "I couldn't generate a response. Please try again."
-
-    print(ai_response)
     
     # Log the conversation
     mongodb.logPrompt(request.user_id, request.prompt, ai_response)
     
-    return {
-        "response": ai_response,
-        "user_id": request.user_id,
-        "status": "success"
-    }
+    return convertJSON(ai_response)
     
     # except Exception as e:
     #     raise HTTPException(status_code=500, detail=f"Error generating response: {str(e)}")
@@ -165,14 +160,13 @@ async def exa_search(request: SearchRequest):
         if request.exclude_domains:
             search_params["exclude_domains"] = request.exclude_domains
         
-        results = exa.search_and_contents(**search_params)
+        results = exa.search(**search_params)
         
         formatted_results = []
         for result in results.results:
             formatted_results.append({
                 "title": result.title,
                 "url": result.url,
-                "text": result.text,
                 "score": result.score,
                 "published_date": result.published_date
             })
@@ -185,71 +179,6 @@ async def exa_search(request: SearchRequest):
         }
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error in exa search: {str(e)}")
-
-   
-# Enhanced Chat (moved from ai_routes.py)
-@app.post("/api/ai/gemini/enhanced-chat")
-async def enhanced_chat(request: EnhancedChatRequest):
-    """
-    Enhanced chat that can optionally use web search to provide more informed responses
-    """
-
-    try:
-        context = ""
-        
-        # If web search is requested, search for relevant information
-        if request.use_web_search and request.search_query:
-            search_results = exa.search(
-                query=request.search_query,
-                num_results=3,
-                type="neural",
-                use_autoprompt=True,
-                include_text=True
-            )
-            
-            # Compile search results into context
-            context_parts = []
-            for result in search_results.results:
-                if result.text:
-                    context_parts.append(f"Source: {result.title}\n{result.text[:300]}...")
-            
-            context = "\n\n".join(context_parts)
-        
-        # Create enhanced prompt with context
-        if context:
-            enhanced_prompt = f"""Based on the following web search context, please answer the user's question:
-
-Context from web search:
-{context}
-
-User's question: {request.prompt}
-
-Please provide a comprehensive answer using the context above along with your knowledge."""
-        else:
-            enhanced_prompt = request.prompt
-        
-        # Generate response with Gemini
-        response = model.generate_content(enhanced_prompt)
-        
-        if response.candidates and response.candidates[0].content:
-            ai_response = response.candidates[0].content.parts[0].text
-        else:
-            ai_response = "I couldn't generate a response. Please try again."
-        
-        # Log the conversation
-        mongodb.logPrompt(request.user_id, request.prompt, ai_response)
-        
-        return {
-            "response": ai_response,
-            "user_id": request.user_id,
-            "used_web_search": request.use_web_search,
-            "search_query": request.search_query if request.use_web_search else None,
-            "status": "success"
-        }
-    
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Error in enhanced chat: {str(e)}")
-
 
 class Message(BaseModel):
     prompt: str
