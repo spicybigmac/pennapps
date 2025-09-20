@@ -90,10 +90,10 @@ export async function middleware(request: NextRequest) {
           
           const userInfo = await userResponse.json();
           
-          // Get user roles from Auth0 Management API
+          // Extract roles from user metadata
           let userRoles = [];
           try {
-            // First, get a Management API token
+            // Get user details from Management API to access metadata
             const mgmtTokenResponse = await fetch(`https://${process.env.AUTH0_DOMAIN}/oauth/token`, {
               method: 'POST',
               headers: {
@@ -110,21 +110,30 @@ export async function middleware(request: NextRequest) {
             const mgmtTokens = await mgmtTokenResponse.json();
             
             if (mgmtTokens.access_token) {
-              // Get user roles using Management API
-              const rolesResponse = await fetch(`https://${process.env.AUTH0_DOMAIN}/api/v2/users/${userInfo.sub}/roles`, {
+              // Get user details including metadata
+              const userDetailsResponse = await fetch(`https://${process.env.AUTH0_DOMAIN}/api/v2/users/${userInfo.sub}`, {
                 headers: {
                   'Authorization': `Bearer ${mgmtTokens.access_token}`,
                 },
               });
               
-              if (rolesResponse.ok) {
-                const rolesData = await rolesResponse.json();
-                userRoles = rolesData.map(role => role.name);
-                console.log('User roles from Management API:', userRoles);
+              if (userDetailsResponse.ok) {
+                const userDetails = await userDetailsResponse.json();
+                const userMetadata = userDetails.user_metadata || {};
+                const appMetadata = userDetails.app_metadata || {};
+                
+                // Extract roles from metadata
+                userRoles = userMetadata.roles || 
+                           appMetadata.roles || 
+                           userMetadata.role ? [userMetadata.role] : 
+                           appMetadata.role ? [appMetadata.role] : 
+                           [];
+                
+                console.log('User roles from metadata:', userRoles);
               }
             }
           } catch (error) {
-            console.error('Error fetching user roles:', error);
+            console.error('Error fetching user metadata:', error);
           }
           
           // Store user info in session cookie

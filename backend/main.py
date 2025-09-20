@@ -3,7 +3,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 import uvicorn
 import dotenv
-dotenv.load_dotenv("/backend/.env")
+dotenv.load_dotenv("backend/.env")
 
 from api_routes import mongodb
 # Import AI router

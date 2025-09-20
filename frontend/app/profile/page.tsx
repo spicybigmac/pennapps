@@ -74,21 +74,6 @@ export default function Profile() {
                 </div>
               </div>
             )}
-            {/* {user.permissions && user.permissions.length > 0 && (
-              <div>
-                <label className="text-gray-400 text-sm">Permissions</label>
-                <div className="flex flex-wrap gap-2 mt-1">
-                  {user.permissions.map((permission, index) => (
-                    <span 
-                      key={index}
-                      className="px-2 py-1 bg-green-600 text-white text-xs rounded"
-                    >
-                      {permission}
-                    </span>
-                  ))}
-                </div>
-              </div>
-            )} */}
             {user.picture && (
               <div>
                 <label className="text-gray-400 text-sm">Profile Picture</label>
