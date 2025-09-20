@@ -47,6 +47,7 @@ yarn-debug.log*` file with this corrected version:
 # Virtual Environment folder in the backend directory
 /backend/.venv/
 /backend/venv/
+/backend/.env
 
 # Byte-compiled / optimized / DLL files
 /backend/__pycache__/
