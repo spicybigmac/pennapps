@@ -24,7 +24,7 @@ app.add_middleware(
 class message(BaseModel):
     prompt: str
 
-@app.post("/geminiChat")
+@app.post("/api/geminiChat")
 async def chat(request: message):
     msg = request.prompt
     # do whatever with gemini here
@@ -35,9 +35,14 @@ async def chat(request: message):
 
 def serializedoc(doc):
     doc["_id"] = str(doc["_id"])
+    doc["lat"] = doc["latitude"]
+    del doc["latitude"]
+    doc["lng"] = doc["longitude"]
+    del doc["longitude"]
+
     return doc
 
-@app.get("/getPositions")
+@app.get("/api/getPositions")
 async def positions():
     docs = mongodb.getPos()
     docs = [serializedoc(x) for x in docs]
