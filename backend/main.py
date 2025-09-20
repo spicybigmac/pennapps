@@ -1,7 +1,7 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
-from apscheduler.schedulers.asyncio import AsyncIOScheduler
+from contextlib import asynccontextmanager
 import uvicorn
 import dotenv
 dotenv.load_dotenv()
@@ -11,10 +11,33 @@ from api_routes import mongodb
 from api_routes.ai_routes import router as ai_router
 from api_routes.ais_routes import router as ais_router
 
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    # Startup: Collect AIS data from GFW API
+    try:
+        from ais_collector import collect_ais_data
+        import os
+        
+        api_key = os.getenv("GFW_API_KEY")
+        if api_key:
+            print("Collecting initial AIS data from Global Fishing Watch API...")
+            await collect_ais_data(api_key, days_back=1)
+            print("AIS data collection completed")
+        else:
+            print("GFW_API_KEY not set - skipping AIS data collection")
+    except Exception as e:
+        print(f"Error collecting AIS data: {e}")
+    
+    yield
+    
+    # Shutdown: Clean up if needed
+    pass
+
 app = FastAPI(
     title="PennApps Backend API",
     description="Backend API for PennApps hackathon project with AI integrations",
-    version="1.0.0"
+    version="1.0.0",
+    lifespan=lifespan
 )
 
 origins = [
@@ -47,20 +70,6 @@ def serialize_doc(doc):
     del doc["longitude"]
     return doc
 
-@app.on_event("startup")
-async def start_scheduler():
-    scheduler = AsyncIOScheduler()
-    scheduler.add_job(
-        collect_ais_data_job, 
-        'interval', 
-        hours=3,  # Poll every 3 hours
-        id='ais_collection'
-    )
-    scheduler.start()
-
-async def collect_ais_data_job():
-    # Call the collection function
-    pass
 
 @app.get("/")
 async def root():

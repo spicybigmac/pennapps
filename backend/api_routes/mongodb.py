@@ -50,6 +50,14 @@ def logAISPosition(position_data):
     """Log one AIS position (SAR or AIS)"""
     vessel_positions.insert_one(position_data)
 
+def store_vessel_positions_bulk(positions):
+    """Store multiple AIS positions efficiently"""
+    if not positions:
+        return True
+    
+    vessel_positions.insert_many(positions)
+    return True
+
 def getAISPositions(source=None, zone_name=None, hours_back=24):
     """Get AIS positions with optional filters"""
     query = {}
