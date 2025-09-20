@@ -1,16 +1,24 @@
 .history
 archive
 
-# This can be more specific if your backend folder is named 'backend'
-backend/__pycache__/
-backend/venv/
-backend/.venv/
-
-# Or more general if Python files are mixed
-__pycache__/
+# Python cache files
+**/__pycache__/
 *.py[cod]
+*.pyo
+*.pyd
+.Python
+
+# Backend specific
+backend/__pycache__/
+backend/**/__pycache__/
+backend/*.pyc
+backend/**/*.pyc
+
+# Virtual environments
 .venv/
 venv/
+backend/venv/
+backend/.venv/
 
 # Virtual Environments
 .env
