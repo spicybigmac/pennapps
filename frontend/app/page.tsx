@@ -3,6 +3,8 @@
 import dynamic from 'next/dynamic';
 import React, { useRef, useEffect, useState, useMemo, useCallback } from 'react';
 import * as topojson from 'topojson-client';
+import AgentToast from '../components/AgentToast';
+import AgentPanel, { type AgentPoint } from '../components/AgentPanel';
 
 const Globe = dynamic(() => import('react-globe.gl'), { ssr: false });
 
@@ -39,6 +41,11 @@ const HomePage: React.FC = () => {
   const [isDragging, setIsDragging] = useState(false);
   const dragOffset = useRef({ x: 0, y: 0 });
   const chatWindowRef = useRef<HTMLDivElement>(null);
+
+  // Agent toast & panel state
+  const [showAgentToast, setShowAgentToast] = useState(false);
+  const [agentPoint, setAgentPoint] = useState<AgentPoint | null>(null);
+  const [isAgentPanelOpen, setIsAgentPanelOpen] = useState(false);
 
   const markerSvg = `<svg viewBox="-4 0 36 36">
     <path fill="currentColor" d="M14,0 C21.732,0 28,5.641 28,12.6 C28,23.963 14,36 14,36 C14,36 0,24.064 0,12.6 C0,5.641 6.268,0 14,0 Z"></path>
@@ -245,6 +252,7 @@ const HomePage: React.FC = () => {
 
   return (
     <div style={{ width: '100%', height: '100vh', position: 'relative', overflow: 'hidden' }}>
+      <div style={{ position: 'absolute', inset: 0, marginLeft: isAgentPanelOpen ? 552 : 0, transition: 'margin-left 260ms ease' }}>
       <Globe
         ref={globeEl}
         globeImageUrl={null}
@@ -285,6 +293,18 @@ const HomePage: React.FC = () => {
             
             if (d.count == 1) {
               setHoveredVessel(d.markers[0]);
+              if (!d.markers[0].legal) {
+                const now = new Date();
+                const ap: AgentPoint = {
+                  id: d.markers[0].id,
+                  lat: d.markers[0].lat,
+                  lng: d.markers[0].lng,
+                  timestamp: now.toISOString(),
+                  confidence: 0.83
+                };
+                setAgentPoint(ap);
+                setShowAgentToast(true);
+              }
               
               const popupHeight = 300;
               const popupWidth = 320;
@@ -353,6 +373,7 @@ const HomePage: React.FC = () => {
         onGlobeReady={()=>{clusterMarkers(vesselData)}}
         onZoom={(pov) => {handleZoom(pov)}}
       />
+      </div>
       
       {/* Vessel information popup */}
       {hoveredVessel && popupPosition && (
@@ -469,6 +490,17 @@ const HomePage: React.FC = () => {
             Close
           </button>
         </div>
+      )}
+
+      {/* Agent Panel and Toast */}
+      <AgentPanel open={isAgentPanelOpen} point={agentPoint} onClose={() => setIsAgentPanelOpen(false)} />
+      {showAgentToast && agentPoint && (
+        <AgentToast
+          title="Illegal Vessel Detected"
+          subtitle={`Lat ${agentPoint.lat.toFixed(2)}, Lng ${agentPoint.lng.toFixed(2)} • ${(agentPoint.confidence * 100).toFixed(0)}% conf.`}
+          onOpen={() => { setIsAgentPanelOpen(true); setShowAgentToast(false); }}
+          onDismiss={() => setShowAgentToast(false)}
+        />
       )}
 
       {/* Agent Chat Interface */}
