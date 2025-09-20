@@ -122,10 +122,10 @@ const HomePage: React.FC = () => {
   };
 
   const handleZoom = (pov : any) => {
-    const newThreshold = Math.round(Math.min(5000, 500 * pov.altitude) / 200) * 200;
+    const newThreshold = Math.min(5000, Math.round(500 * pov.altitude / 200) * 200);
     if(newThreshold != clusterThreshold){
       setClusterThreshold(newThreshold);
-      clusterMarkers(vesselData, clusterThreshold);
+      clusterMarkers(vesselData, newThreshold);
     }
   }
 

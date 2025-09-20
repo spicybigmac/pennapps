@@ -60,7 +60,6 @@ async def get_positions():
     """
     docs = mongodb.getPos()
     docs = [serialize_doc(x) for x in docs]
-    print(docs)
     return docs
 
 if (__name__ == "__main__"):
