@@ -1,12 +1,72 @@
 {
 	"type": "FeatureCollection",
 	"features": [
-		{ "type": "Feature", "geometry": { "type": "Point", "coordinates": [-74.50, 40.00] }, "properties": {} },
-		{ "type": "Feature", "geometry": { "type": "Point", "coordinates": [-74.55, 40.02] }, "properties": {} },
-		{ "type": "Feature", "geometry": { "type": "Point", "coordinates": [-74.45, 39.98] }, "properties": {} },
-		{ "type": "Feature", "geometry": { "type": "Point", "coordinates": [-74.60, 40.05] }, "properties": {} },
-		{ "type": "Feature", "geometry": { "type": "Point", "coordinates": [-74.35, 40.03] }, "properties": {} },
-		{ "type": "Feature", "geometry": { "type": "Point", "coordinates": [-74.48, 40.08] }, "properties": {} }
+		{
+			"type": "Feature",
+			"geometry": { "type": "Point", "coordinates": [-74.5002, 40.0003] },
+			"properties": {
+				"title": "Industrial Cargoship",
+				"classification": "not fishing",
+				"confidence": 0.92,
+				"vesselLengthMeters": 230,
+				"timestamp": "2025-09-20T10:00:00Z"
+			}
+		},
+		{
+			"type": "Feature",
+			"geometry": { "type": "Point", "coordinates": [-74.5521, 40.0182] },
+			"properties": {
+				"title": "Unidentified Vessel",
+				"classification": "fishing",
+				"confidence": 0.71,
+				"vesselLengthMeters": 42,
+				"timestamp": "2025-09-20T10:05:00Z"
+			}
+		},
+		{
+			"type": "Feature",
+			"geometry": { "type": "Point", "coordinates": [-74.4477, 39.9844] },
+			"properties": {
+				"title": "Commercial Boat",
+				"classification": "fishing",
+				"confidence": 0.85,
+				"vesselLengthMeters": 58,
+				"timestamp": "2025-09-20T10:06:00Z"
+			}
+		},
+		{
+			"type": "Feature",
+			"geometry": { "type": "Point", "coordinates": [-74.6012, 40.0481] },
+			"properties": {
+				"title": "Industrial Cargoship",
+				"classification": "not fishing",
+				"confidence": 0.78,
+				"vesselLengthMeters": 180,
+				"timestamp": "2025-09-20T10:08:00Z"
+			}
+		},
+		{
+			"type": "Feature",
+			"geometry": { "type": "Point", "coordinates": [-74.3522, 40.0305] },
+			"properties": {
+				"title": "Unidentified Vessel",
+				"classification": "fishing",
+				"confidence": 0.66,
+				"vesselLengthMeters": 36,
+				"timestamp": "2025-09-20T10:10:00Z"
+			}
+		},
+		{
+			"type": "Feature",
+			"geometry": { "type": "Point", "coordinates": [-74.4803, 40.0811] },
+			"properties": {
+				"title": "Commercial Boat",
+				"classification": "not fishing",
+				"confidence": 0.69,
+				"vesselLengthMeters": 48,
+				"timestamp": "2025-09-20T10:12:00Z"
+			}
+		}
 	]
 }
 

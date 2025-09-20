@@ -42,3 +42,15 @@ body {
 	border-top-color: #000000;
 	border-bottom-color: #000000;
 }
+
+/* Split divider between chat and map */
+.split-divider {
+	width: 2px;
+	background: linear-gradient(to bottom, rgba(255,255,255,0.06), rgba(255,255,255,0.12), rgba(255,255,255,0.06));
+	box-shadow: 0 0 0 1px rgba(255,255,255,0.03), 0 0 24px rgba(0,0,0,0.6);
+}
+
+/* Subtle right shadow for the chat panel edge */
+.border-r {
+	box-shadow: 4px 0 16px -8px rgba(0,0,0,0.6) inset;
+}
