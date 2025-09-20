@@ -11,6 +11,7 @@ url = "https://gateway.api.globalfishingwatch.org/v3/4wings/report"
 
 params = {
     "spatial-resolution": "HIGH",
+    "spatial-aggregation": "false",
     "temporal-resolution": "HOURLY",
     "datasets[0]": "public-global-sar-presence:latest",
     "date-range": "2025-09-01,2025-09-29",
