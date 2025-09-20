@@ -33,33 +33,6 @@ class SearchRequest(BaseModel):
     include_domains: list[str] = []
     exclude_domains: list[str] = []
 
-class EnhancedChatRequest(BaseModel):
-    prompt: str
-    user_id: str = "anonymous"
-    use_web_search: bool = False
-    search_query: str = ""
-
-# @asynccontextmanager
-# async def lifespan(app: FastAPI):
-#     # Startup: Collect AIS data from GFW API
-#     try:
-#         from ais_collector import collect_ais_data
-        
-#         api_key = os.getenv("GFW_API_KEY")
-#         if api_key:
-#             print("Collecting initial AIS data from Global Fishing Watch API...")
-#             await collect_ais_data(api_key, days_back=1)
-#             print("AIS data collection completed")
-#         else:
-#             print("GFW_API_KEY not set - skipping AIS data collection")
-#     except Exception as e:
-#         print(f"Error collecting AIS data: {e}")
-    
-#     yield
-    
-#     # Shutdown: Clean up if needed
-#     pass
-
 app = FastAPI(
     title="PennApps Backend API",
     description="Backend API for PennApps hackathon project with AI integrations",

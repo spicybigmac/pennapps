@@ -269,7 +269,7 @@ export default function AgentPanel({ open, point, onClose }: AgentPanelProps) {
                 relevantLaws.map((law, index) => (
                   <div key={index} className="text-[10px] px-2.5 py-1 rounded-lg border border-gray-800 text-gray-300 hover:text-white hover:border-blue-500 transition-colors"> 
                     <p>
-                      <div className="text-[12px] font-semibold">{law.title}</div>
+                      <span className="text-[12px] font-semibold">{law.title}</span>
                       {law.summary} {law.citation} <br></br>
                       <a href={law.url} className="text-blue-300">source</a>
                     </p>

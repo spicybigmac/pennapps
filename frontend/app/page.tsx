@@ -31,7 +31,6 @@ const HomePage: React.FC = () => {
   const [landData, setLandData] = useState<{ features: any[] }>({ features: [] });
   const [vesselData, setVesselData] = useState<VesselData[]>([]);
   const [clusteredData, setClusteredData] = useState<ClusterData[]>(([]));
-  const [clusterThreshold, setClusterThreshold] = useState(0);
   const [hoveredVessel, setHoveredVessel] = useState<VesselData | null>(null);
   const [popupPosition, setPopupPosition] = useState<{ x: number; y: number } | null>(null);
 
@@ -52,9 +51,14 @@ const HomePage: React.FC = () => {
   </svg>`;
 
   const clusterBase = 1000;
+  const cullingBase = 8000;
 
-  const clusterMarkers = (markers: VesselData[], clusterThreshold: number = clusterBase * 2.5) => {
+  const clusterMarkers = (markers: VesselData[]) => {
     if (markers.length === 0) return [];
+
+    const pov = globeEl.current.pointOfView();
+    const clusterThreshold = Math.min(10000, clusterBase * pov.altitude);
+    const cullingThreshold = Math.max(1, Math.min(80000, cullingBase * pov.altitude));
     
     const clusters: ClusterData[] = [];
     const processed = new Set<number>();
@@ -63,6 +67,17 @@ const HomePage: React.FC = () => {
       if (processed.has(index)) continue;
       
       const marker = markers[index];
+
+      const R = 6371;
+      const dLat = (pov.lat - marker.lat) * Math.PI / 180;
+      const dLng = (pov.lng - marker.lng) * Math.PI / 180;
+      const a = Math.sin(dLat/2) * Math.sin(dLat/2) +
+                Math.cos(marker.lat * Math.PI / 180) * Math.cos(pov.lat * Math.PI / 180) *
+                Math.sin(dLng/2) * Math.sin(dLng/2);
+      const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+      const distance = R * c;
+      if(distance > cullingThreshold) continue;
+
       const cluster: ClusterData = {
         lat: marker.lat,
         lng: marker.lng,
@@ -147,11 +162,7 @@ const HomePage: React.FC = () => {
   };
 
   const handleZoom = (pov : any) => {
-    const newThreshold = Math.min(10000, Math.round(clusterBase * pov.altitude / 10) * 10);
-    if(newThreshold != clusterThreshold){
-      setClusterThreshold(newThreshold);
-      clusterMarkers(vesselData, newThreshold);
-    }
+    clusterMarkers(vesselData);
     setHoveredVessel(null);
     setPopupPosition(null);
   }
@@ -241,7 +252,6 @@ const HomePage: React.FC = () => {
           el.style.color = d.legal ? "#41fc03" : "#fc0303";
           el.style.width = d.count > 1 ? `40px` : `30px`;
           el.style.height = 'auto';
-          el.style.transition = 'opacity 250ms';
           el.style.cursor = 'pointer';
           el.style.pointerEvents = 'auto';
           
