@@ -4,5 +4,6 @@ uvicorn
 python-dotenv
 pymongo
 google-generativeai
+google
 exa-py
 python-multipart
