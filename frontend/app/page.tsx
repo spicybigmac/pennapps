@@ -164,28 +164,28 @@ const HomePage: React.FC = () => {
   }, []);
 
   // Handle clicking outside the popup to close it
-  useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
-      if (hoveredVessel && popupPosition) {
-        // Check if the click is outside the popup
-        const target = event.target as HTMLElement;
-        const popupElement = document.querySelector('[data-popup="vessel-info"]');
+  // useEffect(() => {
+  //   const handleClickOutside = (event: MouseEvent) => {
+  //     if (hoveredVessel && popupPosition) {
+  //       // Check if the click is outside the popup
+  //       const target = event.target as HTMLElement;
+  //       const popupElement = document.querySelector('[data-popup="vessel-info"]');
         
-        if (popupElement && !popupElement.contains(target)) {
-          setHoveredVessel(null);
-          setPopupPosition(null);
-        }
-      }
-    };
+  //       if (popupElement && !popupElement.contains(target)) {
+  //         setHoveredVessel(null);
+  //         setPopupPosition(null);
+  //       }
+  //     }
+  //   };
 
-    if (hoveredVessel) {
-      document.addEventListener('mousedown', handleClickOutside);
-    }
+  //   if (hoveredVessel) {
+  //     document.addEventListener('mousedown', handleClickOutside);
+  //   }
 
-    return () => {
-      document.removeEventListener('mousedown', handleClickOutside);
-    };
-  }, [hoveredVessel, popupPosition]);
+  //   return () => {
+  //     document.removeEventListener('mousedown', handleClickOutside);
+  //   };
+  // }, [hoveredVessel, popupPosition]);
 
   return (
     <div style={{ width: '100%', height: '100vh', position: 'relative', overflow: 'hidden' }}>
@@ -301,7 +301,15 @@ const HomePage: React.FC = () => {
           
           return el;
         }}
-        htmlElementVisibilityModifier={(el, isVisible) => el.style.opacity = isVisible ? "1" : "0"}
+        htmlElementVisibilityModifier={(el, isVisible) => {
+          if(isVisible){
+            el.style.opacity = '1';
+            el.style['pointer-events'] = 'auto';
+          } else {
+            el.style.opacity = '0';
+            el.style['pointer-events'] = 'none';
+          }
+        }}
       
         onGlobeReady={()=>{clusterMarkers(vesselData)}}
         onZoom={(pov) => {handleZoom(pov)}}
