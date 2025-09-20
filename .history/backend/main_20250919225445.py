@@ -29,17 +29,11 @@ async def chat(request: message):
     msg = request.prompt
     # do whatever with gemini here
     response = "geminis response"
-    mongodb.logPrompt(msg, response)
-
-    return response
-
-def serializedoc(doc):
-    doc["id"] = str(doc["_id"])
+    mongodb.logPrompt()
 
 @app.get("/getPositions")
 async def positions():
-    docs = mongodb.getPos()
-    return [serializedoc(x) for x in docs]
+    
 
 if (__name__ == "__main__"):
     uvicorn.run("main:app", reload=True)

@@ -22,24 +22,21 @@ app.add_middleware(
 )
 
 class message(BaseModel):
-    prompt: str
+    msg: str
+    price: float
+    in_stock: bool = True
 
-@app.post("/geminiChat")
-async def chat(request: message):
-    msg = request.prompt
-    # do whatever with gemini here
-    response = "geminis response"
-    mongodb.logPrompt(msg, response)
+@app.post("/logChat")
+async def chat(msg: message):
+    pass
 
-    return response
-
-def serializedoc(doc):
-    doc["id"] = str(doc["_id"])
+@app.get("/getChat")
+async def chat():
+    pass
 
 @app.get("/getPositions")
 async def positions():
-    docs = mongodb.getPos()
-    return [serializedoc(x) for x in docs]
+    
 
 if (__name__ == "__main__"):
     uvicorn.run("main:app", reload=True)

@@ -39,7 +39,7 @@ def serializedoc(doc):
 @app.get("/getPositions")
 async def positions():
     docs = mongodb.getPos()
-    return [serializedoc(x) for x in docs]
+    return []
 
 if (__name__ == "__main__"):
     uvicorn.run("main:app", reload=True)
