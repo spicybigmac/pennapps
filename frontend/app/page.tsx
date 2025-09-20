@@ -1,8 +1,10 @@
 'use client';
 
 import dynamic from 'next/dynamic';
-import React, { useRef, useEffect, useState, useMemo, useCallback } from 'react';
+import React, { useRef, useEffect, useState } from 'react';
 import * as topojson from 'topojson-client';
+import AgentToast from '../components/AgentToast';
+import AgentPanel, { type AgentPoint } from '../components/AgentPanel';
 
 const Globe = dynamic(() => import('react-globe.gl'), { ssr: false });
 
@@ -32,13 +34,11 @@ const HomePage: React.FC = () => {
   const [clusterThreshold, setClusterThreshold] = useState(0);
   const [hoveredVessel, setHoveredVessel] = useState<VesselData | null>(null);
   const [popupPosition, setPopupPosition] = useState<{ x: number; y: number } | null>(null);
-  const [showAgentChat, setShowAgentChat] = useState(false);
-  const [agentChatVessel, setAgentChatVessel] = useState<VesselData | null>(null); // New state for vessel in chat
 
-  const [chatWindowPosition, setChatWindowPosition] = useState({ x: 20, y: 20 });
-  const [isDragging, setIsDragging] = useState(false);
-  const dragOffset = useRef({ x: 0, y: 0 });
-  const chatWindowRef = useRef<HTMLDivElement>(null);
+  // Agent toast & panel state
+  const [showAgentToast, setShowAgentToast] = useState(false);
+  const [agentPoint, setAgentPoint] = useState<AgentPoint | null>(null);
+  const [isAgentPanelOpen, setIsAgentPanelOpen] = useState(false);
 
   const markerSvg = `<svg viewBox="-4 0 36 36">
     <path fill="currentColor" d="M14,0 C21.732,0 28,5.641 28,12.6 C28,23.963 14,36 14,36 C14,36 0,24.064 0,12.6 C0,5.641 6.268,0 14,0 Z"></path>
@@ -189,67 +189,17 @@ const HomePage: React.FC = () => {
     };
   }, []);
 
-  const handleOpenAgentChat = (vessel: VesselData) => {
-    console.log(`Opening agent chat for vessel ID: ${vessel.id}`);
-    setAgentChatVessel(vessel); // Set the vessel for the chat
-    setShowAgentChat(true);
-    setChatWindowPosition({ x: 20, y: 20 }); // Reset position when opening for a new vessel
-  };
-
-  const closeAgentChat = () => {
-    setShowAgentChat(false);
-    setAgentChatVessel(null); // Clear the vessel when chat is closed
-  };
-
-  const onMouseDown = useCallback((e: React.MouseEvent) => {
-    if (chatWindowRef.current) {
-      setIsDragging(true);
-      const rect = chatWindowRef.current.getBoundingClientRect();
-      dragOffset.current = {
-        x: e.clientX - rect.left,
-        y: e.clientY - rect.top,
-      };
-      e.preventDefault();
-    }
-  }, []);
-
-  const onMouseMove = useCallback((e: MouseEvent) => {
-    if (isDragging && chatWindowRef.current) {
-      const x = e.clientX - dragOffset.current.x;
-      const y = e.clientY - dragOffset.current.y;
-      
-      const chatRect = chatWindowRef.current.getBoundingClientRect();
-      const maxX = window.innerWidth - chatRect.width;
-      const maxY = window.innerHeight - chatRect.height;
-
-      setChatWindowPosition({
-        x: Math.max(0, Math.min(x, maxX)),
-        y: Math.max(0, Math.min(y, maxY)),
-      });
-    }
-  }, [isDragging]);
-
-  const onMouseUp = useCallback(() => {
-    setIsDragging(false);
-  }, []);
-
-  useEffect(() => {
-    if (isDragging) {
-      document.addEventListener('mousemove', onMouseMove);
-      document.addEventListener('mouseup', onMouseUp);
-    } else {
-      document.removeEventListener('mousemove', onMouseMove);
-      document.removeEventListener('mouseup', onMouseUp);
-    }
-
-    return () => {
-      document.removeEventListener('mousemove', onMouseMove);
-      document.removeEventListener('mouseup', onMouseUp);
-    };
-  }, [isDragging, onMouseMove, onMouseUp]);
+  // Removed deprecated Agent Chat UI and drag logic
 
   return (
     <div style={{ width: '100%', height: '100vh', position: 'relative', overflow: 'hidden' }}>
+      <div style={{
+        position: 'absolute',
+        inset: 0,
+        transition: 'transform 280ms ease',
+        transform: isAgentPanelOpen ? 'translateX(-80px) scale(0.9)' : 'none',
+        transformOrigin: 'center'
+      }}>
       <Globe
         ref={globeEl}
         globeImageUrl={null}
@@ -290,6 +240,18 @@ const HomePage: React.FC = () => {
             
             if (d.count == 1) {
               setHoveredVessel(d.markers[0]);
+              if (!d.markers[0].legal) {
+                const now = new Date();
+                const ap: AgentPoint = {
+                  id: d.markers[0].id,
+                  lat: d.markers[0].lat,
+                  lng: d.markers[0].lng,
+                  timestamp: now.toISOString(),
+                  confidence: 0.83
+                };
+                setAgentPoint(ap);
+                setShowAgentToast(true);
+              }
               
               const popupHeight = 300;
               const popupWidth = 320;
@@ -358,6 +320,7 @@ const HomePage: React.FC = () => {
         onGlobeReady={()=>{clusterMarkers(vesselData)}}
         onZoom={(pov) => {handleZoom(pov)}}
       />
+      </div>
       
       {/* Vessel information popup */}
       {hoveredVessel && popupPosition && (
@@ -419,32 +382,7 @@ const HomePage: React.FC = () => {
             </span>
           </div>
           
-          {!hoveredVessel.legal && (
-            <button
-              onClick={() => handleOpenAgentChat(hoveredVessel)} // Pass the whole vessel object
-              style={{
-                width: '100%',
-                padding: '10px 16px',
-                backgroundColor: '#ff3030ff',
-                color: 'white',
-                border: 'none',
-                borderRadius: '6px',
-                cursor: 'pointer',
-                fontSize: '13px',
-                fontWeight: '500',
-                transition: 'all 0.2s ease',
-                marginBottom: '10px'
-              }}
-              onMouseEnter={(e) => {
-                e.currentTarget.style.backgroundColor = '#be2424ff';
-              }}
-              onMouseLeave={(e) => {
-                e.currentTarget.style.backgroundColor = '#ff3030ff';
-              }}
-            >
-              Open Agent Chat
-            </button>
-          )}
+          {/* Agent Chat trigger removed */}
 
           <button
             onClick={() => {
@@ -476,99 +414,15 @@ const HomePage: React.FC = () => {
         </div>
       )}
 
-      {/* Agent Chat Interface */}
-      {showAgentChat && agentChatVessel && (
-        <div
-          ref={chatWindowRef}
-          style={{
-            position: 'fixed',
-            top: chatWindowPosition.y,
-            left: chatWindowPosition.x,
-            width: '350px',
-            height: '500px',
-            backgroundColor: 'rgba(30, 30, 30, 0.98)',
-            color: 'white',
-            borderRadius: '12px',
-            boxShadow: '0 8px 32px rgba(0, 0, 0, 0.6)',
-            border: '1px solid rgba(255, 255, 255, 0.2)',
-            zIndex: 1001,
-            display: 'flex',
-            flexDirection: 'column',
-            overflow: 'hidden',
-            cursor: isDragging ? 'grabbing' : 'grab',
-          }}
-        >
-          <div
-            style={{
-              padding: '15px',
-              backgroundColor: '#ff3030ff',
-              borderTopLeftRadius: '12px',
-              borderTopRightRadius: '12px',
-              fontWeight: 'bold',
-              fontSize: '16px',
-              display: 'flex',
-              justifyContent: 'space-between',
-              alignItems: 'center',
-              cursor: 'grab',
-            }}
-            onMouseDown={onMouseDown}
-          >
-            Agent Chat - Vessel {agentChatVessel.id || 'Unknown'}
-            <button
-              onClick={closeAgentChat} // Use the new close chat function
-              style={{
-                background: 'none',
-                border: 'none',
-                color: 'white',
-                fontSize: '18px',
-                cursor: 'pointer',
-              }}
-            >
-              &times;
-            </button>
-          </div>
-          <div style={{ flexGrow: 1, padding: '15px', overflowY: 'auto', borderBottom: '1px solid rgba(255, 255, 255, 0.1)' }}>
-            <p style={{ margin: '0 0 10px 0', color: '#ccc' }}>Agent: Hello! How can I assist you with vessel {agentChatVessel.id}?</p>
-            <p style={{ margin: '0 0 10px 0', textAlign: 'right', color: '#add8e6' }}>You: I need more information on its recent activities.</p>
-          </div>
-          <div style={{ padding: '15px', display: 'flex', borderTop: '1px solid rgba(255, 255, 255, 0.1)' }}>
-            <input
-              type="text"
-              placeholder="Type your message..."
-              style={{
-                flexGrow: 1,
-                padding: '10px',
-                borderRadius: '6px',
-                border: '1px solid rgba(255, 255, 255, 0.3)',
-                backgroundColor: 'rgba(255, 255, 255, 0.1)',
-                color: 'white',
-                marginRight: '10px',
-                fontSize: '14px',
-              }}
-            />
-            <button
-              style={{
-                padding: '10px 15px',
-                backgroundColor: '#28a745',
-                color: 'white',
-                border: 'none',
-                borderRadius: '6px',
-                cursor: 'pointer',
-                fontSize: '14px',
-                fontWeight: '500',
-                transition: 'all 0.2s ease',
-              }}
-              onMouseEnter={(e) => {
-                e.currentTarget.style.backgroundColor = '#218838';
-              }}
-              onMouseLeave={(e) => {
-                e.currentTarget.style.backgroundColor = '#28a745';
-              }}
-            >
-              Send
-            </button>
-          </div>
-        </div>
+      {/* Agent Panel and Toast */}
+      <AgentPanel open={isAgentPanelOpen} point={agentPoint} onClose={() => setIsAgentPanelOpen(false)} />
+      {showAgentToast && agentPoint && (
+        <AgentToast
+          title="Illegal Vessel Detected"
+          subtitle={`Lat ${agentPoint.lat.toFixed(2)}, Lng ${agentPoint.lng.toFixed(2)} • ${(agentPoint.confidence * 100).toFixed(0)}% conf.`}
+          onOpen={() => { setIsAgentPanelOpen(true); setShowAgentToast(false); }}
+          onDismiss={() => setShowAgentToast(false)}
+        />
       )}
     </div>
   );

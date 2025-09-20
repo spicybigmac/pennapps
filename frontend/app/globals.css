@@ -54,3 +54,23 @@ body {
 .border-r {
 	box-shadow: 4px 0 16px -8px rgba(0,0,0,0.6) inset;
 }
+
+/* Keyframes for toast/panel entrance */
+@keyframes fadeInDown {
+  0% { opacity: 0; transform: translateY(-6px); }
+  100% { opacity: 1; transform: translateY(0); }
+}
+.anim-fade-in-down { animation: fadeInDown 220ms ease-out; }
+
+@keyframes slideUp {
+  0% { opacity: 0; transform: translateY(8px); }
+  100% { opacity: 1; transform: translateY(0); }
+}
+.anim-slide-up { animation: slideUp 260ms ease-out; }
+
+/* Slide down from top for top-attached toast */
+@keyframes slideFromTop {
+  0% { opacity: 0; transform: translate(-50%, -100%); }
+  100% { opacity: 1; transform: translate(-50%, 0); }
+}
+.anim-slide-from-top { animation: slideFromTop 260ms ease-out; }
