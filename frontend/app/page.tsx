@@ -20,6 +20,7 @@ interface ClusterData {
   markers: VesselData[];
   isfishing: boolean;
   legal: boolean;
+  closest: number;
 }
 
 const HomePage: React.FC = () => {
@@ -60,7 +61,8 @@ const HomePage: React.FC = () => {
         count: 1,
         markers: [marker],
         isfishing: marker.isfishing,
-        legal: marker.legal
+        legal: marker.legal,
+        closest: Infinity
       };
       
       // Find nearby markers to cluster
@@ -84,6 +86,7 @@ const HomePage: React.FC = () => {
           cluster.markers.push(otherMarker);
           processed.add(otherIndex);
           cluster.legal = cluster.legal && otherMarker.legal
+          cluster.closest = Math.min(cluster.closest, distance);
         }
       }
 
@@ -202,18 +205,41 @@ const HomePage: React.FC = () => {
             if (d.count == 1) {
               // Handle single vessel click
               setHoveredVessel(d.markers[0]);
+            } else {
+              // INSERT_YOUR_CODE
+              // Gradually zoom onto the cluster when a cluster is clicked
+              if (globeEl.current) {
+                // Get current POV
+                const currentPov = globeEl.current.pointOfView();
+                // Target POV: center on cluster, zoom in (decrease altitude)
+
+                const targetPov = {
+                  lat: d.lat,
+                  lng: d.lng,
+                  altitude: Math.min(5000, d.closest) / 500 * 0.5 // zoom in, but not too close
+                };
+
+                // Animate the transition
+                const duration = 1200; // ms
+                const start = performance.now();
+
+                function animateZoom(now: number) {
+                  const t = Math.min((now - start) / duration, 1);
+                  // Ease in-out
+                  const ease = t < 0.5 ? 2 * t * t : -1 + (4 - 2 * t) * t;
+                  const pov = {
+                    lat: currentPov.lat + (targetPov.lat - currentPov.lat) * ease,
+                    lng: currentPov.lng + (targetPov.lng - currentPov.lng) * ease,
+                    altitude: currentPov.altitude + (targetPov.altitude - currentPov.altitude) * ease
+                  };
+                  globeEl.current.pointOfView(pov);
+                  if (t < 1) {
+                    requestAnimationFrame(animateZoom);
+                  }
+                }
+                requestAnimationFrame(animateZoom);
+              }
             }
-          });
-          
-          // Add hover event handlers
-          el.addEventListener('mouseenter', (e) => {
-            el.style.transform = 'scale(1.2)';
-            el.style.zIndex = '100';
-          });
-          
-          el.addEventListener('mouseleave', () => {
-            el.style.transform = 'scale(1)';
-            el.style.zIndex = '1';
           });
           
           return el;
