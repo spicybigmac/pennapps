@@ -1,6 +1,7 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
+import mapboxgl from 'mapbox-gl';
 
 interface ChatMessage {
   id: string;
@@ -13,6 +14,99 @@ export default function AnalyzePage() {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [inputValue, setInputValue] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [selectedTarget, setSelectedTarget] = useState<string | null>(null);
+  const mapContainerRef = useRef<HTMLDivElement | null>(null);
+  const mapRef = useRef<mapboxgl.Map | null>(null);
+
+  useEffect(() => {
+    if (!mapContainerRef.current) return;
+
+    const token = process.env.NEXT_PUBLIC_MAPBOX_TOKEN as string | undefined;
+    if (!token) {
+      console.warn('Missing NEXT_PUBLIC_MAPBOX_TOKEN');
+      return;
+    }
+    mapboxgl.accessToken = token;
+
+    mapRef.current = new mapboxgl.Map({
+      container: mapContainerRef.current,
+      style: 'mapbox://styles/tcytseven/cmfscq4hy003901qpcl7m8jlb',
+      center: [-74.5, 40],
+      zoom: 9
+    });
+
+    mapRef.current.on('load', () => {
+      // Attach popups to existing purple point layers in the style using source-layer 'dummy'
+      const style = mapRef.current!.getStyle();
+      const targetLayerIds = (style.layers || [])
+        .filter((l: any) => (l.type === 'circle' || l.type === 'symbol') && l['source-layer'] === 'dummy')
+        .map((l) => l.id);
+
+      // Load unique vessel data from public/vessels.json
+      fetch('/vessels.json')
+        .then((r) => r.json())
+        .then((fc: GeoJSON.FeatureCollection) => {
+          const features = fc.features as Array<GeoJSON.Feature<GeoJSON.Point, any>>;
+
+          targetLayerIds.forEach((layerId) => {
+            mapRef.current!.on('click', layerId, (e: any) => {
+              const f = e.features?.[0];
+              if (!f) return;
+              // Pick a unique feature based on clicked coordinates (stable hash)
+              const lng = e.lngLat.lng;
+              const lat = e.lngLat.lat;
+              const hash = ((Math.floor((lng + 180) * 1000) & 0xffff) << 16) ^ (Math.floor((lat + 90) * 1000) & 0xffff);
+              const chosen = features[Math.abs(hash) % Math.max(1, features.length)];
+              const props = chosen.properties || {};
+              const title = props.title || 'Vessel';
+              const classification = props.classification || 'not fishing';
+              const confidence = typeof props.confidence === 'number' ? props.confidence : 0.7;
+              const vesselLengthMeters = props.vesselLengthMeters ?? 50;
+              const timestamp = props.timestamp || new Date().toISOString();
+
+              // Use actual clicked coordinates for accurate alignment
+              const lngLat = [e.lngLat.lng, e.lngLat.lat] as [number, number];
+
+              const html = `
+                <div style="min-width:180px">
+                  <div style="font-weight:600;margin-bottom:6px">${title}</div>
+                  <ul style="margin:0;padding-left:14px;font-size:12px;line-height:1.4">
+                    <li><strong>timestamp</strong>: ${timestamp}</li>
+                    <li><strong>location</strong>: ${lngLat[0].toFixed(6)}, ${lngLat[1].toFixed(6)}</li>
+                    <li><strong>classification</strong>: ${classification}</li>
+                    <li><strong>confidence</strong>: ${(confidence * 100).toFixed(0)}%</li>
+                    <li><strong>vessel length</strong>: ${vesselLengthMeters} m</li>
+                  </ul>
+                </div>`;
+
+              new mapboxgl.Popup({ className: 'expansi-popup', maxWidth: '220px' })
+                .setLngLat(lngLat)
+                .setHTML(html)
+                .addTo(mapRef.current!);
+
+              setSelectedTarget(title);
+              setMessages((prev) => [
+                ...prev,
+                { id: Date.now().toString(), type: 'assistant', content: title, timestamp: new Date() }
+              ]);
+            });
+
+            // Cursor feedback
+            mapRef.current!.on('mouseenter', layerId, () => {
+              mapRef.current!.getCanvas().style.cursor = 'pointer';
+            });
+            mapRef.current!.on('mouseleave', layerId, () => {
+              mapRef.current!.getCanvas().style.cursor = '';
+            });
+          });
+        })
+        .catch(() => {});
+    });
+
+    return () => {
+      try { mapRef.current?.remove(); } catch {}
+    };
+  }, []);
 
   const handleTestAnalysis = () => {
     setIsLoading(true);
@@ -77,9 +171,11 @@ export default function AnalyzePage() {
   };
 
   return (
-    <div className="flex h-screen bg-black text-white font-sans">
+    <div className="flex h-screen bg-black text-white font-sans relative">
+      {/* Divider */}
+      <div className={`split-divider pointer-events-none absolute inset-y-0 left-1/2 -translate-x-1/2`}></div>
       {/* Left Panel - Analysis Chat */}
-      <div className="w-1/2 flex flex-col border-r border-gray-800 h-screen">
+      <div className={`w-1/2 flex flex-col border-r border-gray-900/60 h-screen`}> 
         {/* Header */}
         <div className="p-4 border-b border-gray-800">
           <h1 className="text-2xl font-semibold">Expansi Analysis Center</h1>
@@ -93,7 +189,7 @@ export default function AnalyzePage() {
             disabled={isLoading}
             className="w-full bg-black hover:bg-white disabled:bg-black border border-gray-700 hover:text-black text-white font-medium py-3 px-4 rounded-lg transition-colors"
           >
-            {isLoading ? 'Running Analysis...' : 'Run Test Analysis'}
+            {isLoading ? 'Running Analysis...' : selectedTarget ? `Run Analysis On ${selectedTarget}` : 'Run Analysis'}
           </button>
         </div>
 
@@ -154,36 +250,9 @@ export default function AnalyzePage() {
         </div>
       </div>
 
-      {/* Right Panel - Mapbox Placeholder */}
-      <div className="w-1/2 bg-black/50 relative">
-        <div className="absolute inset-0 flex items-center justify-center">
-          <div className="text-center p-8 bg-black/50 rounded-lg border border-gray-800">
-            <div className="w-16 h-16 bg-gray-900 rounded-lg mx-auto mb-4 flex items-center justify-center">
-              <svg className="w-8 h-8 text-gray-500" fill="currentColor" viewBox="0 0 20 20">
-                <path fillRule="evenodd" d="M5.05 4.05a7 7 0 119.9 9.9L10 18.9l-4.95-4.95a7 7 0 010-9.9zM10 11a2 2 0 100-4 2 2 0 000 4z" clipRule="evenodd" />
-              </svg>
-            </div>
-            <h3 className="text-lg font-semibold text-white mb-2">Mapbox Integration</h3>
-            <p className="text-sm text-gray-500 mb-4">Interactive maritime surveillance map</p>
-            <div className="bg-black rounded-lg p-4 max-w-sm mx-auto border border-gray-800">
-              <p className="text-xs text-gray-400 mb-2">Features to be implemented:</p>
-              <ul className="text-xs text-gray-400 space-y-1 text-left">
-                <li>• Real-time vessel tracking</li>
-                <li>• AIS data visualization</li>
-                <li>• Satellite detection overlay</li>
-                <li>• Marine Protected Areas</li>
-                <li>• Alert markers and zones</li>
-              </ul>
-            </div>
-          </div>
-        </div>
-        
-        {/* Mapbox attribution placeholder */}
-        <div className="absolute bottom-4 right-4 text-xs text-gray-500">
-          <div className="bg-black/50 px-2 py-1 rounded">
-            <span className="font-bold">mapbox</span>
-          </div>
-        </div>
+      {/* Right Panel - Mapbox */}
+      <div className={`w-1/2 bg-black relative h-screen`}>
+        <div ref={mapContainerRef} className="absolute inset-0" style={{ height: '100%' }} />
       </div>
     </div>
   );
