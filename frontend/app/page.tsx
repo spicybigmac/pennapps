@@ -30,6 +30,7 @@ const HomePage: React.FC = () => {
   const [clusteredData, setClusteredData] = useState<ClusterData[]>([]);
   const [clusterThreshold, setClusterThreshold] = useState(0);
   const [hoveredVessel, setHoveredVessel] = useState<VesselData | null>(null);
+  const [popupPosition, setPopupPosition] = useState<{ x: number; y: number } | null>(null);
 
   const markerSvg = `<svg viewBox="-4 0 36 36">
     <path fill="currentColor" d="M14,0 C21.732,0 28,5.641 28,12.6 C28,23.963 14,36 14,36 C14,36 0,24.064 0,12.6 C0,5.641 6.268,0 14,0 Z"></path>
@@ -205,6 +206,7 @@ const HomePage: React.FC = () => {
             if (d.count == 1) {
               // Handle single vessel click
               setHoveredVessel(d.markers[0]);
+              setPopupPosition({ x: e.clientX, y: e.clientY });
             } else {
               // INSERT_YOUR_CODE
               // Gradually zoom onto the cluster when a cluster is clicked
@@ -251,52 +253,74 @@ const HomePage: React.FC = () => {
       />
       
       {/* Vessel information popup */}
-      {hoveredVessel && (
+      {hoveredVessel && popupPosition && (
         <div
           style={{
-            position: 'absolute',
-            top: '20px',
-            right: '20px',
-            backgroundColor: 'rgba(0, 0, 0, 0.9)',
+            position: 'fixed',
+            left: popupPosition.x + 15,
+            top: popupPosition.y - 10,
+            backgroundColor: 'rgba(0, 0, 0, 0.95)',
             color: 'white',
-            padding: '16px 20px',
-            borderRadius: '8px',
+            padding: '20px',
+            borderRadius: '12px',
             fontSize: '14px',
             fontFamily: 'Arial, sans-serif',
             zIndex: 1000,
-            boxShadow: '0 4px 12px rgba(0, 0, 0, 0.3)',
+            boxShadow: '0 8px 32px rgba(0, 0, 0, 0.4)',
             border: '1px solid rgba(255, 255, 255, 0.2)',
-            maxWidth: '300px',
-            minWidth: '250px'
+            maxWidth: '320px',
+            minWidth: '280px',
+            backdropFilter: 'blur(10px)'
           }}
         >
-          <div style={{ fontWeight: 'bold', marginBottom: '12px', color: hoveredVessel.isfishing ? '#ff6b6b' : '#51cf66' }}>
-            Vessel Information
-          </div>
-          <div style={{ marginBottom: '8px' }}>
-            <strong>Location:</strong> {hoveredVessel.lat.toFixed(4)}°, {hoveredVessel.lng.toFixed(4)}°
-          </div>
-          <div style={{ marginBottom: '8px' }}>
-            <strong>Status:</strong> {hoveredVessel.isfishing ? 'Fishing' : 'Not Fishing'}
-          </div>
-          <div style={{ marginBottom: '8px' }}>
-            <strong>Registered:</strong> {hoveredVessel.legal ? 'Yes' : 'No'}
-          </div>
-          <button
-            onClick={() => setHoveredVessel(null)}
+          {/* Image placeholder */}
+          <div
             style={{
-              marginTop: '12px',
-              padding: '8px 16px',
+              width: '100%',
+              height: '120px',
               backgroundColor: 'rgba(255, 255, 255, 0.1)',
-              color: 'white',
-              border: '1px solid rgba(255, 255, 255, 0.3)',
-              borderRadius: '4px',
-              cursor: 'pointer',
+              borderRadius: '8px',
+              marginBottom: '16px',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              border: '2px dashed rgba(255, 255, 255, 0.3)',
+              color: 'rgba(255, 255, 255, 0.6)',
               fontSize: '12px'
             }}
           >
-            Close
-          </button>
+            📷 Vessel Image Placeholder
+          </div>
+          
+          <div style={{ fontWeight: 'bold', marginBottom: '12px', color: hoveredVessel.legal ? '#51cf66' : '#ff6b6b', fontSize: '16px' }}>
+            Vessel Information
+          </div>
+          
+          <div style={{ marginBottom: '10px' }}>
+            <strong>Location:</strong> {hoveredVessel.lat.toFixed(4)}°, {hoveredVessel.lng.toFixed(4)}°
+          </div>
+          
+          <div style={{ marginBottom: '10px' }}>
+            <strong>Status:</strong> 
+            <span style={{ 
+              color: hoveredVessel.isfishing ? '#ff6b6b' : '#51cf66',
+              marginLeft: '8px',
+              fontWeight: 'bold'
+            }}>
+              {hoveredVessel.isfishing ? 'Fishing' : 'Not Fishing'}
+            </span>
+          </div>
+          
+          <div style={{ marginBottom: '16px' }}>
+            <strong>Registered:</strong> 
+            <span style={{ 
+              color: hoveredVessel.legal ? '#51cf66' : '#ff6b6b',
+              marginLeft: '8px',
+              fontWeight: 'bold'
+            }}>
+              {hoveredVessel.legal ? 'Yes' : 'No'}
+            </span>
+          </div>
         </div>
       )}
     </div>
