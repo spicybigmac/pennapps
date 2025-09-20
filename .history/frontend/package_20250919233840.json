@@ -9,12 +9,10 @@
     "lint": "eslint"
   },
   "dependencies": {
-    "@auth0/nextjs-auth0": "^4.10.0",
     "next": "^15.5.3",
     "react": "19.1.0",
     "react-dom": "19.1.0",
     "react-globe.gl": "^2.36.0",
-    "recharts": "^3.2.1",
     "three": "^0.180.0",
     "topojson-client": "^3.1.0"
   },
