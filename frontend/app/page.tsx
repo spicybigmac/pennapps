@@ -146,9 +146,11 @@ const HomePage: React.FC = () => {
       const data = await response.json();
       if (response.ok) {
         setVesselData(data);
+        // Update clusters with new data
+        clusterMarkers(data);
       }
     } catch (error) {
-      alert('An unexpected error occurred.');
+      console.error('Error fetching vessel data:', error);
     }
   }
 
@@ -161,6 +163,32 @@ const HomePage: React.FC = () => {
       });
 
     fetchData();
+  }, []);
+
+  // Fetch data when user switches back to dashboard tab
+  useEffect(() => {
+    const handleVisibilityChange = () => {
+      if (!document.hidden) {
+        // Tab is visible, fetch fresh data
+        fetchData();
+      }
+    };
+
+    const handleFocus = () => {
+      // Window gained focus, fetch fresh data
+      fetchData();
+    };
+
+    // Listen for tab visibility changes
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    
+    // Listen for window focus events
+    window.addEventListener('focus', handleFocus);
+
+    return () => {
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+      window.removeEventListener('focus', handleFocus);
+    };
   }, []);
 
   return (
