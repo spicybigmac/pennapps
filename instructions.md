@@ -9,7 +9,7 @@ Detect and flag illegal, unreported, and unregulated (IUU) fishing and maritime 
 - **Coast Guard & Maritime Enforcement:** Operations centers, patrol units
 - **NGOs & Researchers:** Monitoring IUU fishing and Marine Protected Areas (MPAs)
 - **Commercial Partners:** ESG compliance, fleet risk scoring
-
+.
 ---
 
 ## Problem Statement

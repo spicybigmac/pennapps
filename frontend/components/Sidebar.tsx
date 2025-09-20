@@ -3,6 +3,7 @@
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import React from 'react';
+import AuthNav from './auth';
 
 const Sidebar = () => {
   const pathname = usePathname();
@@ -11,6 +12,7 @@ const Sidebar = () => {
     { href: '/', label: 'Dashboard' },
     { href: '/analyze', label: 'Gemini' },
     { href: '/reports', label: 'Reports' },
+    { href: '/profile', label: 'Profile' },
   ];
 
   return (
@@ -18,7 +20,7 @@ const Sidebar = () => {
       <div className="mb-10">
         <h1 className="text-2xl font-bold">Expansi</h1>
       </div>
-      <nav className="flex flex-col space-y-4">
+      <nav className="flex flex-col space-y-4 flex-1">
         {navItems.map((item) => (
           <Link
             key={item.label}
@@ -33,6 +35,9 @@ const Sidebar = () => {
           </Link>
         ))}
       </nav>
+      <div className="mt-auto">
+        <AuthNav />
+      </div>
     </div>
   );
 };

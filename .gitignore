@@ -1,0 +1,73 @@
+.history
+archive
+
+# This can be more specific if your backend folder is named 'backend'
+backend/__pycache__/
+backend/venv/
+backend/.venv/
+
+# Or more general if Python files are mixed
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+
+# Virtual Environments
+.env
+.venv
+env/
+venv/
+
+# IDE / Editor folders
+.idea/
+.vscode/
+
+# Secrets - ALWAYS ignore local environment files
+*.env
+.env.*
+!.env.example
+
+frontend/.next
+
+frontend/node_modules/
+
+# Testing
+frontend/coverage/
+
+# Build output
+frontend/build/
+frontend/dist/
+
+# Logs
+npm-debug.log*
+yarn-debug.log*` file with this corrected version:
+
+```gitignore
+
+# Virtual Environment folder in the backend directory
+/backend/.venv/
+/backend/venv/
+/backend/.env
+
+# Byte-compiled / optimized / DLL files
+/backend/__pycache__/
+*.py[cod]
+
+# Dependencies in the frontend directory
+/frontend/node_modules/
+
+# Build output from the frontend directory
+/frontend/build/
+/frontend/dist/
+
+# IDE / Editor folders
+.idea/
+.vscode/
+
+# Secrets - These should always be ignored, wherever they are
+*.env
+.env.*
+!.env.example
+
+# OS-generated files
+.DS_Store
