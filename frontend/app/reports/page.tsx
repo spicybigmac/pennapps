@@ -43,9 +43,97 @@ const ReportsPage = () => {
   const [isShareModalOpen, setIsShareModalOpen] = useState(false);
   const [reportToShare, setReportToShare] = useState<Report | null>(null);
 
+  // Form state
+  const [dateStart, setDateStart] = useState<string>('');
+  const [dateEnd, setDateEnd] = useState<string>('');
+  const [timeStart, setTimeStart] = useState<string>('');
+  const [timeEnd, setTimeEnd] = useState<string>('');
+  const [clearance, setClearance] = useState<string>('Public Trust');
+  const [sections, setSections] = useState({
+    iuu_activity: false,
+    ai_voice_agent: false,
+    vessel_tracks: false,
+    economic_impact: false,
+  });
+
+  // Generation state
+  const [isGenerating, setIsGenerating] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [generatedReport, setGeneratedReport] = useState<any>(null);
+  const [includedSections, setIncludedSections] = useState<string[]>([]);
+  const [lastGeneratedId, setLastGeneratedId] = useState<string | null>(null);
+
   const handleShareClick = (report: Report) => {
     setReportToShare(report);
     setIsShareModalOpen(true);
+  };
+
+  const handleSectionToggle = (key: keyof typeof sections) => {
+    setSections((prev) => ({ ...prev, [key]: !prev[key] }));
+  };
+
+  const handleGenerate = async () => {
+    setIsGenerating(true);
+    setError(null);
+    setGeneratedReport(null);
+    setIncludedSections([]);
+    try {
+      const payload = {
+        date_start: dateStart || null,
+        date_end: dateEnd || null,
+        time_start: timeStart || null,
+        time_end: timeEnd || null,
+        clearance,
+        sections: {
+          iuu_activity: sections.iuu_activity,
+          ai_voice_agent: sections.ai_voice_agent,
+          vessel_tracks: sections.vessel_tracks,
+          economic_impact: sections.economic_impact,
+        },
+      };
+
+      // Diagnostics for troubleshooting
+      console.log('[Reports] Generate clicked with payload:', payload);
+
+      const res = await fetch('http://127.0.0.1:8000/api/reports/generate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      });
+
+      if (!res.ok) {
+        const text = await res.text();
+        console.error('[Reports] Backend error response:', text);
+        throw new Error(text || 'Failed to generate report');
+      }
+
+      const data = await res.json();
+      const reportJson = data.report ?? null;
+      console.log('[Reports] Generation success. Included sections:', data.included_sections);
+      setGeneratedReport(reportJson);
+      setIncludedSections(data.included_sections ?? []);
+
+      // Create a lightweight report entry and persist the JSON by id in localStorage
+      const id = `generated-${Date.now()}`;
+      const title = 'Generated Report';
+      const date = new Date().toISOString().slice(0, 10);
+      const clearanceSaved = clearance;
+      const storageKey = `report_json_${id}`;
+      try {
+        localStorage.setItem(storageKey, JSON.stringify(reportJson));
+      } catch (e) {
+        console.warn('Failed saving report HTML to localStorage', e);
+      }
+      setLastGeneratedId(id);
+
+      // Optimistically show it at top of the list by mutating local array for this session
+      reports.unshift({ id, title, date, clearance: clearanceSaved });
+    } catch (e: any) {
+      console.error('[Reports] Generation failed:', e);
+      setError(e.message || 'Something went wrong');
+    } finally {
+      setIsGenerating(false);
+    }
   };
 
   return (
@@ -111,8 +199,8 @@ const ReportsPage = () => {
             <div>
               <label className="block text-sm font-medium text-gray-400 mb-2">Date Range</label>
               <div className="flex space-x-4">
-                <input type="date" className="w-full bg-black border border-gray-700 rounded-md p-2 text-white font-sans" />
-                <input type="date" className="w-full bg-black border border-gray-700 rounded-md p-2 text-white font-sans" />
+                <input value={dateStart} onChange={(e) => setDateStart(e.target.value)} type="date" className="w-full bg-black border border-gray-700 rounded-md p-2 text-white font-sans" />
+                <input value={dateEnd} onChange={(e) => setDateEnd(e.target.value)} type="date" className="w-full bg-black border border-gray-700 rounded-md p-2 text-white font-sans" />
               </div>
             </div>
 
@@ -121,16 +209,18 @@ const ReportsPage = () => {
               <label className="block text-sm font-medium text-gray-400 mb-2">Time Range (EST)</label>
               <div className="flex space-x-4">
                 <div className="relative w-full">
-                  <select className="w-full bg-black border border-gray-700 rounded-md p-2 text-white font-sans appearance-none pr-8">
-                    {timeOptions.map(time => <option key={time}>{time}</option>)}
+                  <select value={timeStart} onChange={(e) => setTimeStart(e.target.value)} className="w-full bg-black border border-gray-700 rounded-md p-2 text-white font-sans appearance-none pr-8">
+                    <option value="">Select start</option>
+                    {timeOptions.map(time => <option key={time} value={time}>{time}</option>)}
                   </select>
                   <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-gray-400">
                     <svg className="fill-current h-4 w-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20"><path d="M9.293 12.95l.707.707L15.657 8l-1.414-1.414L10 10.828 5.757 6.586 4.343 8z"/></svg>
                   </div>
                 </div>
                 <div className="relative w-full">
-                  <select className="w-full bg-black border border-gray-700 rounded-md p-2 text-white font-sans appearance-none pr-8">
-                    {timeOptions.map(time => <option key={time}>{time}</option>)}
+                  <select value={timeEnd} onChange={(e) => setTimeEnd(e.target.value)} className="w-full bg-black border border-gray-700 rounded-md p-2 text-white font-sans appearance-none pr-8">
+                    <option value="">Select end</option>
+                    {timeOptions.map(time => <option key={time} value={time}>{time}</option>)}
                   </select>
                   <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-gray-400">
                     <svg className="fill-current h-4 w-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20"><path d="M9.293 12.95l.707.707L15.657 8l-1.414-1.414L10 10.828 5.757 6.586 4.343 8z"/></svg>
@@ -144,28 +234,28 @@ const ReportsPage = () => {
               <label className="block text-sm font-medium text-gray-400 mb-2">Sections to Include</label>
               <div className="flex flex-col space-y-4">
                 <label className="flex items-center space-x-3 font-sans cursor-pointer">
-                  <input type="checkbox" className="peer hidden" />
+                  <input checked={sections.iuu_activity} onChange={() => handleSectionToggle('iuu_activity')} type="checkbox" className="peer hidden" />
                   <span className="w-5 h-5 border-2 border-gray-700 rounded-sm flex items-center justify-center transition-colors peer-checked:bg-white peer-checked:border-gray-400 peer-focus-visible:ring-2 peer-focus-visible:ring-offset-2 peer-focus-visible:ring-white ring-offset-black">
                     <svg className="w-3 h-3 text-black hidden peer-checked:block" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="5" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
                   </span>
                   <span>IUU Activity Summary</span>
                 </label>
                 <label className="flex items-center space-x-3 font-sans cursor-pointer">
-                  <input type="checkbox" className="peer hidden" />
+                  <input checked={sections.ai_voice_agent} onChange={() => handleSectionToggle('ai_voice_agent')} type="checkbox" className="peer hidden" />
                   <span className="w-5 h-5 border-2 border-gray-700 rounded-sm flex items-center justify-center transition-colors peer-checked:bg-white peer-checked:border-gray-400 peer-focus-visible:ring-2 peer-focus-visible:ring-offset-2 peer-focus-visible:ring-white ring-offset-black">
                     <svg className="w-3 h-3 text-black hidden peer-checked:block" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="5" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
                   </span>
                   <span>AI Voice Agent Performance</span>
                 </label>
                 <label className="flex items-center space-x-3 font-sans cursor-pointer">
-                  <input type="checkbox" className="peer hidden" />
+                  <input checked={sections.vessel_tracks} onChange={() => handleSectionToggle('vessel_tracks')} type="checkbox" className="peer hidden" />
                   <span className="w-5 h-5 border-2 border-gray-700 rounded-sm flex items-center justify-center transition-colors peer-checked:bg-white peer-checked:border-gray-400 peer-focus-visible:ring-2 peer-focus-visible:ring-offset-2 peer-focus-visible:ring-white ring-offset-black">
                     <svg className="w-3 h-3 text-black hidden peer-checked:block" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="5" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
                   </span>
                   <span>Vessel Track Details</span>
                 </label>
                 <label className="flex items-center space-x-3 font-sans cursor-pointer">
-                  <input type="checkbox" className="peer hidden" />
+                  <input checked={sections.economic_impact} onChange={() => handleSectionToggle('economic_impact')} type="checkbox" className="peer hidden" />
                   <span className="w-5 h-5 border-2 border-gray-700 rounded-sm flex items-center justify-center transition-colors peer-checked:bg-white peer-checked:border-gray-400 peer-focus-visible:ring-2 peer-focus-visible:ring-offset-2 peer-focus-visible:ring-white ring-offset-black">
                     <svg className="w-3 h-3 text-black hidden peer-checked:block" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="5" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
                   </span>
@@ -178,7 +268,7 @@ const ReportsPage = () => {
             <div>
               <label htmlFor="clearance" className="block text-sm font-medium text-gray-400 mb-2">Clearance Level</label>
               <div className="relative w-full">
-                <select id="clearance" className="w-full bg-black border border-gray-700 rounded-md p-2 text-white font-sans appearance-none pr-8">
+                <select id="clearance" value={clearance} onChange={(e) => setClearance(e.target.value)} className="w-full bg-black border border-gray-700 rounded-md p-2 text-white font-sans appearance-none pr-8">
                   <option>Public Trust</option>
                   <option>Confidential</option>
                   <option>Top Secret</option>
@@ -193,10 +283,17 @@ const ReportsPage = () => {
           {/* Generate Button */}
           <div className="mt-auto pt-6 border-t border-gray-800">
             <button
-              className="w-full bg-white text-black font-bold py-3 px-4 rounded-lg transition-colors hover:bg-gray-300"
+              disabled={isGenerating}
+              onClick={handleGenerate}
+              className="w-full bg-white text-black font-bold py-3 px-4 rounded-lg transition-colors hover:bg-gray-300 disabled:opacity-60"
             >
-              Generate Report
+              {isGenerating ? 'Generating…' : 'Generate Report'}
             </button>
+            <div className="sr-only" aria-live="polite">{isGenerating ? 'Generating report' : 'Idle'}</div>
+            {error && (
+              <p className="mt-3 text-sm text-red-400">{error}</p>
+            )}
+            {/* No inline preview; user clicks the new report entry to read */}
           </div>
       </div>
 
