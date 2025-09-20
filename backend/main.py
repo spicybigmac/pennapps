@@ -5,9 +5,9 @@ import uvicorn
 import dotenv
 dotenv.load_dotenv()
 
-import mongodb
+from api_routes import mongodb
 # Import AI router
-from ai_routes import router as ai_router
+from api_routes.ai_routes import router as ai_router
 
 app = FastAPI(
     title="PennApps Backend API",

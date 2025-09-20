@@ -3,7 +3,7 @@ from pydantic import BaseModel
 import google.generativeai as genai
 from exa_py import Exa
 import os
-import mongodb
+from . import mongodb
 
 router = APIRouter(prefix="/api/ai", tags=["ai"])
 
