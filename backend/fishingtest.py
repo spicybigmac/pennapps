@@ -5,17 +5,36 @@ dotenv.load_dotenv()
 import os
 import requests
 
-url = "https://gateway.api.globalfishingwatch.org/v3/vessels/search"
+import requests
+
+url = "https://gateway.api.globalfishingwatch.org/v3/4wings/report"
+
 params = {
-    "query": "000",
-    "datasets[0]": "public-global-vessel-identity:latest",
-    "includes[0]": "MATCH_CRITERIA",
-    "includes[1]": "OWNERSHIP",
-    "includes[2]": "AUTHORIZATIONS"
+    "spatial-resolution": "HIGH",
+    "temporal-resolution": "HOURLY",
+    "datasets[0]": "public-global-sar-presence:latest",
+    "date-range": "2025-09-01,2025-09-29",
+    "format": "JSON",
+    "filters[0]": "matched='false'"
 }
-print(os.getenv('GFW_API_KEY'))
+
 headers = {
-    "Authorization": f"Bearer {os.getenv('GFW_API_KEY')}"
+    "Authorization": f"Bearer {os.getenv('GFW_API_KEY')}",
+    "Content-Type": "application/json"
 }
-response = requests.get(url, headers=headers, params=params)
-print(response.json())
+
+data = {
+    "region": {
+        "dataset": "public-eez-areas",
+        "id": 8465
+    }
+}
+
+response = requests.post(url, headers=headers, params=params, json=data)
+
+with open("fishingtest.csv", "w") as f:
+    for value in response.json()['entries']:
+        f.write(str(value)+"\n")
+        # print(value["registryInfo"][0]["shipname"])
+
+# python3 backend/fishingtest.py
