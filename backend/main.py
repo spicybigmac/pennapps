@@ -34,14 +34,15 @@ async def chat(request: message):
     return response
 
 def serializedoc(doc):
-    doc["id"] = str(doc["_id"])
+    doc["_id"] = str(doc["_id"])
+    return doc
 
 @app.get("/getPositions")
 async def positions():
     docs = mongodb.getPos()
-    return [serializedoc(x) for x in docs]
+    docs = [serializedoc(x) for x in docs]
+    print(docs)
+    return docs
 
 if (__name__ == "__main__"):
     uvicorn.run("main:app", reload=True)
-
-mongodb.closedb()
