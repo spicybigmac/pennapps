@@ -20,6 +20,7 @@ interface ClusterData {
   markers: VesselData[];
   isfishing: boolean;
   legal: boolean;
+  closest: number;
 }
 
 const HomePage: React.FC = () => {
@@ -28,6 +29,8 @@ const HomePage: React.FC = () => {
   const [vesselData, setVesselData] = useState<VesselData[]>([]);
   const [clusteredData, setClusteredData] = useState<ClusterData[]>([]);
   const [clusterThreshold, setClusterThreshold] = useState(0);
+  const [hoveredVessel, setHoveredVessel] = useState<VesselData | null>(null);
+  const [popupPosition, setPopupPosition] = useState<{ x: number; y: number } | null>(null);
 
   const markerSvg = `<svg viewBox="-4 0 36 36">
     <path fill="currentColor" d="M14,0 C21.732,0 28,5.641 28,12.6 C28,23.963 14,36 14,36 C14,36 0,24.064 0,12.6 C0,5.641 6.268,0 14,0 Z"></path>
@@ -59,7 +62,8 @@ const HomePage: React.FC = () => {
         count: 1,
         markers: [marker],
         isfishing: marker.isfishing,
-        legal: marker.legal
+        legal: marker.legal,
+        closest: Infinity
       };
       
       // Find nearby markers to cluster
@@ -82,7 +86,8 @@ const HomePage: React.FC = () => {
           cluster.count++;
           cluster.markers.push(otherMarker);
           processed.add(otherIndex);
-          cluster.isfishing = cluster.isfishing || otherMarker.isfishing
+          cluster.legal = cluster.legal && otherMarker.legal
+          cluster.closest = Math.min(cluster.closest, distance);
         }
       }
 
@@ -127,6 +132,9 @@ const HomePage: React.FC = () => {
       setClusterThreshold(newThreshold);
       clusterMarkers(vesselData, newThreshold);
     }
+    // Close popup on zoom
+    setHoveredVessel(null);
+    setPopupPosition(null);
   }
 
   const fetchData = async () => {
@@ -155,8 +163,32 @@ const HomePage: React.FC = () => {
     fetchData();
   }, []);
 
+  // Handle clicking outside the popup to close it
+  // useEffect(() => {
+  //   const handleClickOutside = (event: MouseEvent) => {
+  //     if (hoveredVessel && popupPosition) {
+  //       // Check if the click is outside the popup
+  //       const target = event.target as HTMLElement;
+  //       const popupElement = document.querySelector('[data-popup="vessel-info"]');
+        
+  //       if (popupElement && !popupElement.contains(target)) {
+  //         setHoveredVessel(null);
+  //         setPopupPosition(null);
+  //       }
+  //     }
+  //   };
+
+  //   if (hoveredVessel) {
+  //     document.addEventListener('mousedown', handleClickOutside);
+  //   }
+
+  //   return () => {
+  //     document.removeEventListener('mousedown', handleClickOutside);
+  //   };
+  // }, [hoveredVessel, popupPosition]);
+
   return (
-    <div style={{ width: '100vw', height: '100vh', overflow: 'hidden', backgroundColor: 'black' }}>
+    <div style={{ width: '100%', height: '100vh', position: 'relative', overflow: 'hidden' }}>
       <Globe
         ref={globeEl}
         globeImageUrl={null}
@@ -186,18 +218,202 @@ const HomePage: React.FC = () => {
             el.innerHTML = markerSvg;
           }
           
-          el.style.color = d.isfishing ? "red" : "green";
+          el.style.color = d.legal ? "#41fc03" : "#fc0303";
           el.style.width = d.count > 1 ? `40px` : `30px`; // Make clusters slightly larger
+          el.style.height = 'auto';
           el.style.transition = 'opacity 250ms';
           el.style.cursor = 'pointer';
+          el.style.pointerEvents = 'auto'; // Ensure pointer events work
+          
+          // Add click event handler for all markers
+          el.addEventListener('click', (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            
+            if (d.count == 1) {
+              // Handle single vessel click
+              setHoveredVessel(d.markers[0]);
+              
+              // Calculate smart positioning based on screen position
+              const popupHeight = 300; // Approximate popup height
+              const popupWidth = 320; // Approximate popup width
+              const screenHeight = window.innerHeight;
+              const screenWidth = window.innerWidth;
+              
+              let x = e.clientX + 15;
+              let y = e.clientY - 10;
+              
+              // Adjust horizontal position if popup would go off screen
+              if (x + popupWidth > screenWidth) {
+                x = e.clientX - popupWidth - 15; // Position to the left instead
+              }
+              
+              // Adjust vertical position based on screen half
+              if (e.clientY > screenHeight / 2) {
+                // Bottom half - position popup above the click
+                y = e.clientY - popupHeight - 10;
+              } else {
+                // Top half - position popup below the click
+                y = e.clientY - 10;
+              }
+              
+              // Ensure popup stays within screen bounds
+              y = Math.max(10, Math.min(y, screenHeight - popupHeight - 10));
+              x = Math.max(10, Math.min(x, screenWidth - popupWidth - 10));
+              
+              setPopupPosition({ x, y });
+            } else {
+              // INSERT_YOUR_CODE
+              // Gradually zoom onto the cluster when a cluster is clicked
+              if (globeEl.current) {
+                // Get current POV
+                const currentPov = globeEl.current.pointOfView();
+                // Target POV: center on cluster, zoom in (decrease altitude)
+
+                const targetPov = {
+                  lat: d.lat,
+                  lng: d.lng,
+                  altitude: Math.min(5000, d.closest) / 500 * 0.5 // zoom in, but not too close
+                };
+
+                // Animate the transition
+                const duration = 1200; // ms
+                const start = performance.now();
+
+                function animateZoom(now: number) {
+                  const t = Math.min((now - start) / duration, 1);
+                  // Ease in-out
+                  const ease = t < 0.5 ? 2 * t * t : -1 + (4 - 2 * t) * t;
+                  const pov = {
+                    lat: currentPov.lat + (targetPov.lat - currentPov.lat) * ease,
+                    lng: currentPov.lng + (targetPov.lng - currentPov.lng) * ease,
+                    altitude: currentPov.altitude + (targetPov.altitude - currentPov.altitude) * ease
+                  };
+                  globeEl.current.pointOfView(pov);
+                  if (t < 1) {
+                    requestAnimationFrame(animateZoom);
+                  }
+                }
+                requestAnimationFrame(animateZoom);
+              }
+            }
+          });
           
           return el;
         }}
-        htmlElementVisibilityModifier={(el, isVisible) => el.style.opacity = isVisible ? "1" : "0"}
+        htmlElementVisibilityModifier={(el, isVisible) => {
+          if(isVisible){
+            el.style.opacity = '1';
+            el.style['pointer-events'] = 'auto';
+          } else {
+            el.style.opacity = '0';
+            el.style['pointer-events'] = 'none';
+          }
+        }}
       
         onGlobeReady={()=>{clusterMarkers(vesselData)}}
         onZoom={(pov) => {handleZoom(pov)}}
       />
+      
+      {/* Vessel information popup */}
+      {hoveredVessel && popupPosition && (
+        <div
+          data-popup="vessel-info"
+          style={{
+            position: 'fixed',
+            left: popupPosition.x + 15,
+            top: popupPosition.y - 10,
+            backgroundColor: 'rgba(0, 0, 0, 0.95)',
+            color: 'white',
+            padding: '20px',
+            borderRadius: '12px',
+            fontSize: '14px',
+            fontFamily: 'Arial, sans-serif',
+            zIndex: 1000,
+            boxShadow: '0 8px 32px rgba(0, 0, 0, 0.4)',
+            border: '1px solid rgba(255, 255, 255, 0.2)',
+            maxWidth: '320px',
+            minWidth: '280px',
+            backdropFilter: 'blur(10px)'
+          }}
+        >
+          {/* Image placeholder */}
+          <div
+            style={{
+              width: '100%',
+              height: '120px',
+              backgroundColor: 'rgba(255, 255, 255, 0.1)',
+              borderRadius: '8px',
+              marginBottom: '16px',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              border: '2px dashed rgba(255, 255, 255, 0.3)',
+              color: 'rgba(255, 255, 255, 0.6)',
+              fontSize: '12px'
+            }}
+          >
+            📷 Vessel Image Placeholder
+          </div>
+          
+          <div style={{ fontWeight: 'bold', marginBottom: '12px', color: hoveredVessel.legal ? '#51cf66' : '#ff6b6b', fontSize: '16px' }}>
+            Vessel Information
+          </div>
+          
+          <div style={{ marginBottom: '10px' }}>
+            <strong>Location:</strong> {hoveredVessel.lat.toFixed(4)}°, {hoveredVessel.lng.toFixed(4)}°
+          </div>
+          
+          <div style={{ marginBottom: '10px' }}>
+            <strong>Status:</strong> 
+            <span style={{ 
+              color: hoveredVessel.isfishing ? '#ff6b6b' : '#51cf66',
+              marginLeft: '8px',
+              fontWeight: 'bold'
+            }}>
+              {hoveredVessel.isfishing ? 'Fishing' : 'Not Fishing'}
+            </span>
+          </div>
+          
+          <div style={{ marginBottom: '16px' }}>
+            <strong>Registered:</strong> 
+            <span style={{ 
+              color: hoveredVessel.legal ? '#51cf66' : '#ff6b6b',
+              marginLeft: '8px',
+              fontWeight: 'bold'
+            }}>
+              {hoveredVessel.legal ? 'Yes' : 'No'}
+            </span>
+          </div>
+          
+          <button
+            onClick={() => {
+              setHoveredVessel(null);
+              setPopupPosition(null);
+            }}
+            style={{
+              width: '100%',
+              padding: '10px 16px',
+              backgroundColor: 'rgba(255, 255, 255, 0.1)',
+              color: 'white',
+              border: '1px solid rgba(255, 255, 255, 0.3)',
+              borderRadius: '6px',
+              cursor: 'pointer',
+              fontSize: '13px',
+              fontWeight: '500',
+              transition: 'all 0.2s ease'
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.backgroundColor = 'rgba(255, 255, 255, 0.2)';
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.backgroundColor = 'rgba(255, 255, 255, 0.1)';
+            }}
+          >
+            Close
+          </button>
+        </div>
+      )}
     </div>
   );
 };
