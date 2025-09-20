@@ -30,7 +30,7 @@ const HomePage: React.FC = () => {
   const globeEl = useRef<any>(null);
   const [landData, setLandData] = useState<{ features: any[] }>({ features: [] });
   const [vesselData, setVesselData] = useState<VesselData[]>([]);
-  const [clusteredData, setClusteredData] = useState<ClusterData[]>([]);
+  const [clusteredData, setClusteredData] = useState<ClusterData[]>(([]));
   const [clusterThreshold, setClusterThreshold] = useState(0);
   const [hoveredVessel, setHoveredVessel] = useState<VesselData | null>(null);
   const [popupPosition, setPopupPosition] = useState<{ x: number; y: number } | null>(null);
@@ -134,7 +134,6 @@ const HomePage: React.FC = () => {
     }
     setHoveredVessel(null);
     setPopupPosition(null);
-    // Don't close chat on zoom, it's persistent now
   }
 
   const fetchData = async () => {
@@ -146,12 +145,7 @@ const HomePage: React.FC = () => {
       const data = await response.json();
       if (response.ok) {
         setVesselData(data);
-        if(globeEl.current){
-          setClusterThreshold(0);
-          handleZoom(globeEl.current.pointOfView());
-        } else {
-          clusterMarkers(vesselData);
-        }
+        clusterMarkers(data);
       }
     } catch (error) {
       console.error('Error fetching vessel data:', error);
@@ -188,8 +182,6 @@ const HomePage: React.FC = () => {
       window.removeEventListener('focus', handleFocus);
     };
   }, []);
-
-  // Removed deprecated Agent Chat UI and drag logic
 
   return (
     <div style={{ width: '100%', height: '100vh', position: 'relative', overflow: 'hidden' }}>
@@ -236,7 +228,6 @@ const HomePage: React.FC = () => {
           el.addEventListener('click', (e) => {
             e.preventDefault();
             e.stopPropagation();
-            // Do not close chat automatically on marker click
             
             if (d.count == 1) {
               setHoveredVessel(d.markers[0]);
@@ -345,7 +336,7 @@ const HomePage: React.FC = () => {
           }}
         >
 
-          <div style={{ fontWeight: 'bold', marginBottom: '12px', color: hoveredVessel.legal ? '#0ff736ff' : '#ff3030ff', fontSize: '16px' }}>
+          <div style={{ fontWeight: 'bold', marginBottom: '12px', color: hoveredVessel.legal ? '#51cf66' : '#ff6b6b', fontSize: '16px' }}>
             {hoveredVessel.legal ? 'Registered' : 'Unregistered'}
           </div>
 
@@ -374,7 +365,7 @@ const HomePage: React.FC = () => {
           <div style={{ marginBottom: '10px' }}>
             <strong>Status:</strong> 
             <span style={{ 
-              color: hoveredVessel.isfishing ? '#ff3030ff' : '#0ff736ff',
+              color: hoveredVessel.isfishing ? '#ff6b6b' : '#51cf66',
               marginLeft: '8px',
               fontWeight: 'bold'
             }}>
@@ -388,7 +379,6 @@ const HomePage: React.FC = () => {
             onClick={() => {
               setHoveredVessel(null);
               setPopupPosition(null);
-              // Do not close chat here, it's independent
             }}
             style={{
               width: '100%',
