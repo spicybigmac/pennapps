@@ -34,13 +34,42 @@ const ReportDisplayPage = ({ params }: { params: Promise<{ reportId:string }> })
   const [reportData, setReportData] = useState<ReportData | null>(null);
 
   useEffect(() => {
+    // If this is a generated report, try to load HTML and render it directly
+    const storageKey = `report_html_${resolvedParams.reportId}`;
+    const html = typeof window !== 'undefined' ? localStorage.getItem(storageKey) : null;
+    if (html) {
+      // Render HTML-only report and bail out of chart data
+      setReportData(null);
+      const container = document.getElementById('generated-report-container');
+      if (container) {
+        container.innerHTML = html;
+      }
+      return;
+    }
+
+    // Fallback to demo mock data for hardcoded reports
     fetch('/mock-data.json')
       .then((res) => res.json())
       .then((data) => setReportData(data));
-  }, []);
+  }, [resolvedParams.reportId]);
 
+  // For generated HTML reports, render the container; for others, wait for data
   if (!reportData) {
-    return <div className="flex-1 p-8 text-white text-center">Loading report data...</div>;
+    return (
+      <div className="flex-1 p-8 text-white">
+        <div className="max-w-4xl">
+          <Link href="/reports" className="flex items-center space-x-2 text-gray-400 hover:text-white mb-6">
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M19 12H5"/><path d="m12 19-7-7 7-7"/></svg>
+            <span>All Reports</span>
+          </Link>
+          <h1 className="text-3xl font-bold mb-2">
+            Report: <span className="text-gray-400 capitalize">{resolvedParams.reportId.replaceAll('-', ' ')}</span>
+          </h1>
+          <p className="text-gray-500 mb-8">Generated on: {new Date().toLocaleDateString()}</p>
+          <div id="generated-report-container" className="bg-black border border-gray-800 rounded-lg p-8 space-y-6 prose prose-invert max-w-none max-h-[70vh] overflow-y-auto overflow-x-hidden" />
+        </div>
+      </div>
+    );
   }
   
   const successRateData = [{ name: 'Success Rate', value: reportData.agentPerformance.success_rate }];
@@ -57,7 +86,7 @@ const ReportDisplayPage = ({ params }: { params: Promise<{ reportId:string }> })
         </h1>
         <p className="text-gray-500 mb-8">Generated on: {new Date().toLocaleDateString()}</p>
 
-        <div className="bg-black border border-gray-800 rounded-lg p-8 space-y-12">
+        <div className="bg-black border border-gray-800 rounded-lg p-8 space-y-12 max-h-[70vh] overflow-y-auto overflow-x-hidden">
           <section>
             <h2 className="text-xl font-semibold mb-4 border-b border-gray-800 pb-3">
               Weekly IUU Activity Analysis

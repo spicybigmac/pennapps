@@ -1,6 +1,7 @@
 from fastapi import FastAPI, HTTPException, APIRouter
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
+from typing import Optional
 from contextlib import asynccontextmanager
 import uvicorn
 import dotenv
@@ -37,6 +38,21 @@ class EnhancedChatRequest(BaseModel):
     user_id: str = "anonymous"
     use_web_search: bool = False
     search_query: str = ""
+
+# Reports generation models
+class ReportSections(BaseModel):
+    iuu_activity: bool = False
+    ai_voice_agent: bool = False
+    vessel_tracks: bool = False
+    economic_impact: bool = False
+
+class ReportGenerateRequest(BaseModel):
+    date_start: Optional[str] = None
+    date_end: Optional[str] = None
+    time_start: Optional[str] = None
+    time_end: Optional[str] = None
+    clearance: str = "Public Trust"
+    sections: ReportSections
 
 # @asynccontextmanager
 # async def lifespan(app: FastAPI):
@@ -281,6 +297,103 @@ async def get_positions():
     docs = mongodb.getPos()
     docs = [serialize_doc(x) for x in docs]
     return docs
+
+
+# Reports: Generate via Gemini
+@app.post("/api/reports/generate")
+async def generate_report(request: ReportGenerateRequest):
+    """
+    Generate a maritime report as HTML based on selected sections and time window.
+    The HTML mirrors the style and headings of existing hardcoded reports.
+    """
+    try:
+        # Build dynamic context from inputs
+        selected_sections = []
+        if request.sections.iuu_activity:
+            selected_sections.append("Weekly IUU Activity Analysis")
+        if request.sections.ai_voice_agent:
+            selected_sections.append("AI Voice Agent Performance")
+        if request.sections.vessel_tracks:
+            selected_sections.append("Vessel Track Details")
+        if request.sections.economic_impact:
+            selected_sections.append("Economic Impact Analysis")
+
+        time_window = []
+        if request.date_start:
+            time_window.append(request.date_start)
+        if request.date_end:
+            if request.date_start and request.date_end != request.date_start:
+                time_window.append("to " + request.date_end)
+            elif not request.date_start:
+                time_window.append(request.date_end)
+        if request.time_start:
+            time_window.append(f"from {request.time_start}")
+        if request.time_end:
+            time_window.append(f"to {request.time_end}")
+        time_window_str = " ".join(time_window) if time_window else "the selected period"
+
+        if not selected_sections:
+            # Sensible default if no boxes checked: include IUU summary only
+            selected_sections = ["Weekly IUU Activity Analysis"]
+
+        # Tone based on clearance level
+        clearance_instructions = {
+            "Public Trust": (
+                "Adopt an accessible, non-sensitive tone suitable for public release. Avoid operationally sensitive details."
+            ),
+            "Confidential": (
+                "Use professional language and include nuanced risk qualifiers. Avoid exact coordinates or personally identifiable information."
+            ),
+            "Top Secret": (
+                "Use precise, analytical tone with crisp recommendations. Do not expose classified sources; summarize methods abstractly."
+            ),
+        }.get(request.clearance, "Use a professional tone appropriate to the audience.")
+
+        # Construct a detailed multi-paragraph system-style instruction and task prompt
+        prompt = f"""
+You are an intelligence analyst assisting a maritime monitoring team working on IUU (Illegal, Unreported, and Unregulated) fishing detection and response. Generate a polished, decision-ready report for the PennApps operational console covering {", ".join(selected_sections)}. The report should synthesize recent signals from AIS behavior, satellite SAR/optical cues, patrol observations, and environmental context over {time_window_str}. Do not fabricate precise metrics; when quantitative detail is not available, use careful qualitative language (e.g., "elevated activity", "moderate likelihood", "notable clustering").
+
+Tailor the content to the audience clearance level "{request.clearance}". {clearance_instructions} Provide a brief executive preface followed by clearly labeled sections. Only include the sections explicitly requested below and omit all others.
+
+Requested sections (include exactly these, with matching titles):
+- Weekly IUU Activity Analysis -> summarize patterns, hotspots, likely drivers; call out confidence and caveats.
+- AI Voice Agent Performance -> describe outreach efficacy, common call outcomes, and operator load implications.
+- Vessel Track Details -> describe representative tracks, behavioral anomalies (e.g., loitering, rendezvous), and risk rationales without revealing sensitive coordinates.
+- Economic Impact Analysis -> discuss likely economic implications (market pressure, local community impact, enforcement costs savings/risks) using directional, not precise, estimates.
+
+Match the existing report presentation style used in the UI: clear headings, short paragraphs (2–5 sentences), readable spacing, and succinct bullets that can accompany charts. Include explicit "chart callouts" as sentences (not images) that an engineer could later pair with bar, radial, or pie charts (e.g., "callout: success_rate trending upward; drivers: fewer escalations").
+
+OUTPUT FORMAT REQUIREMENTS (strict):
+- Return VALID HTML only (no markdown, no JSON).
+- Start with <section><h2>Executive Summary</h2> containing AT LEAST TWO substantial paragraphs for leadership.
+- Then include ONLY the requested sections. For each included section:
+  - Wrap content in <section> and an <h2> heading that EXACTLY matches the section title above.
+  - Provide 1–2 concise paragraphs.
+  - Provide a <ul> with 3–5 bullets (operational insights; include 1 bullet labeled "chart callout:" if appropriate).
+- Do NOT include tables, code blocks, or inline CSS. Keep to semantic HTML only.
+"""
+
+        response = model.generate_content(prompt)
+
+        if response.candidates and response.candidates[0].content:
+            ai_html = response.candidates[0].content.parts[0].text
+        else:
+            ai_html = "<section><h2>Executive Summary</h2><p>We could not generate the report at this time.</p></section>"
+
+        # Log prompt for auditing
+        try:
+            mongodb.logPrompt("report_generator", prompt, ai_html[:5000])
+        except Exception:
+            pass
+
+        return {
+            "status": "success",
+            "html": ai_html,
+            "included_sections": selected_sections,
+            "clearance": request.clearance,
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error generating report: {str(e)}")
 
 if (__name__ == "__main__"):
     uvicorn.run("main:app", reload=True)
