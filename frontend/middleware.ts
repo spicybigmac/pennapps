@@ -91,7 +91,7 @@ export async function middleware(request: NextRequest) {
           const userInfo = await userResponse.json();
           
           // Extract roles from user metadata
-          let userRoles = [];
+          let userRoles: string[] = [];
           try {
             // Get user details from Management API to access metadata
             const mgmtTokenResponse = await fetch(`https://${process.env.AUTH0_DOMAIN}/oauth/token`, {

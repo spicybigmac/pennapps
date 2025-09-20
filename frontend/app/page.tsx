@@ -5,6 +5,7 @@ import React, { useRef, useEffect, useState } from 'react';
 import * as topojson from 'topojson-client';
 import AgentToast from '../components/AgentToast';
 import AgentPanel, { type AgentPoint } from '../components/AgentPanel';
+import { useAuth } from '../hooks/useAuth';
 
 const Globe = dynamic(() => import('react-globe.gl'), { ssr: false });
 
@@ -38,6 +39,9 @@ const HomePage: React.FC = () => {
   const [showAgentToast, setShowAgentToast] = useState(false);
   const [agentPoint, setAgentPoint] = useState<AgentPoint | null>(null);
   const [isAgentPanelOpen, setIsAgentPanelOpen] = useState(false);
+
+  // Auth state
+  const { user, hasAnyRole } = useAuth();
 
   const markerSvg = `<svg viewBox="-4 0 36 36">
     <path fill="currentColor" d="M14,0 C21.732,0 28,5.641 28,12.6 C28,23.963 14,36 14,36 C14,36 0,24.064 0,12.6 C0,5.641 6.268,0 14,0 Z"></path>
@@ -261,7 +265,7 @@ const HomePage: React.FC = () => {
             
             if (d.count == 1) {
               setHoveredVessel(d.markers[0]);
-              if (!d.markers[0].registered) {
+              if (!d.markers[0].registered && hasAnyRole(['confidential', 'secret', 'top-secret'])) {
                 const now = new Date();
                 const ap: AgentPoint = {
                   id: d.markers[0].id,
@@ -272,7 +276,6 @@ const HomePage: React.FC = () => {
                 setAgentPoint(ap);
                 setShowAgentToast(true);
               }
-              
               const popupHeight = 300;
               const popupWidth = 320;
               const screenHeight = window.innerHeight;
@@ -428,7 +431,7 @@ const HomePage: React.FC = () => {
 
       {/* Agent Panel and Toast */}
       <AgentPanel open={isAgentPanelOpen} point={agentPoint} onClose={() => setIsAgentPanelOpen(false)} />
-      {showAgentToast && agentPoint && (
+      {showAgentToast && agentPoint && hasAnyRole(['confidential', 'secret', 'top-secret']) && (
         <AgentToast
           title="Unregistered Vessel Detected"
           subtitle={`${agentPoint.lat.toFixed(4)}°, ${agentPoint.lng.toFixed(4)}°, ${agentPoint.timestamp}`}

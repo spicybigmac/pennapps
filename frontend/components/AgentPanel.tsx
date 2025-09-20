@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useEffect, useMemo, useState } from 'react';
+import { useAuth } from '../hooks/useAuth';
 
 export type AgentPoint = {
   id?: string;
@@ -38,6 +39,9 @@ export default function AgentPanel({ open, point, onClose }: AgentPanelProps) {
   const [agentResponse, setAgentResponse] = useState<string | null>(null);
   const [isLoadingAgentResponse, setIsLoadingAgentResponse] = useState(false);
   const [relevantLaws, setRelevantLaws] = useState<{ title: string; summary: string; citation:string; url: string }[]>([]);
+
+  // Auth state
+  const { user, hasAnyRole, isLoading } = useAuth();
 
   useEffect(() => {
     if (!open || !point) {
@@ -167,6 +171,14 @@ export default function AgentPanel({ open, point, onClose }: AgentPanelProps) {
     }
     return <div className="w-3.5 h-3.5 rounded-full bg-gray-700" />;
   };
+
+  // Check if user has required clearance level
+  const hasAccess = hasAnyRole(['confidential', 'secret', 'top-secret']);
+
+  // Don't render anything if user doesn't have required roles
+  if (!isLoading && !hasAccess) {
+    return null;
+  }
 
   return (
     <div
