@@ -1,0 +1,19 @@
+{
+  "weeklyIUU": [
+    { "week": "Wk 34", "vessels_detected": 12 },
+    { "week": "Wk 35", "vessels_detected": 18 },
+    { "week": "Wk 36", "vessels_detected": 15 },
+    { "week": "Wk 37", "vessels_detected": 22 }
+  ],
+  "agentPerformance": {
+    "success_rate": 92.8,
+    "avg_call_duration_min": 2.8,
+    "escalation_rate": 4.1,
+    "total_calls_q3": 1284,
+    "call_outcomes": [
+      { "name": "Success", "value": 1191 },
+      { "name": "Escalated", "value": 53 },
+      { "name": "Failed", "value": 40 }
+    ]
+  }
+}
