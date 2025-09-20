@@ -132,6 +132,9 @@ const HomePage: React.FC = () => {
       setClusterThreshold(newThreshold);
       clusterMarkers(vesselData, newThreshold);
     }
+    // Close popup on zoom
+    setHoveredVessel(null);
+    setPopupPosition(null);
   }
 
   const fetchData = async () => {
@@ -159,6 +162,30 @@ const HomePage: React.FC = () => {
 
     fetchData();
   }, []);
+
+  // Handle clicking outside the popup to close it
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (hoveredVessel && popupPosition) {
+        // Check if the click is outside the popup
+        const target = event.target as HTMLElement;
+        const popupElement = document.querySelector('[data-popup="vessel-info"]');
+        
+        if (popupElement && !popupElement.contains(target)) {
+          setHoveredVessel(null);
+          setPopupPosition(null);
+        }
+      }
+    };
+
+    if (hoveredVessel) {
+      document.addEventListener('mousedown', handleClickOutside);
+    }
+
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [hoveredVessel, popupPosition]);
 
   return (
     <div style={{ width: '100%', height: '100vh', position: 'relative', overflow: 'hidden' }}>
@@ -191,7 +218,7 @@ const HomePage: React.FC = () => {
             el.innerHTML = markerSvg;
           }
           
-          el.style.color = d.legal ? "green" : "red";
+          el.style.color = d.legal ? "#41fc03" : "#fc0303";
           el.style.width = d.count > 1 ? `40px` : `30px`; // Make clusters slightly larger
           el.style.height = 'auto';
           el.style.transition = 'opacity 250ms';
@@ -255,6 +282,7 @@ const HomePage: React.FC = () => {
       {/* Vessel information popup */}
       {hoveredVessel && popupPosition && (
         <div
+          data-popup="vessel-info"
           style={{
             position: 'fixed',
             left: popupPosition.x + 15,
@@ -321,6 +349,33 @@ const HomePage: React.FC = () => {
               {hoveredVessel.legal ? 'Yes' : 'No'}
             </span>
           </div>
+          
+          <button
+            onClick={() => {
+              setHoveredVessel(null);
+              setPopupPosition(null);
+            }}
+            style={{
+              width: '100%',
+              padding: '10px 16px',
+              backgroundColor: 'rgba(255, 255, 255, 0.1)',
+              color: 'white',
+              border: '1px solid rgba(255, 255, 255, 0.3)',
+              borderRadius: '6px',
+              cursor: 'pointer',
+              fontSize: '13px',
+              fontWeight: '500',
+              transition: 'all 0.2s ease'
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.backgroundColor = 'rgba(255, 255, 255, 0.2)';
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.backgroundColor = 'rgba(255, 255, 255, 0.1)';
+            }}
+          >
+            Close
+          </button>
         </div>
       )}
     </div>
