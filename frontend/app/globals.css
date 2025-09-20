@@ -24,3 +24,21 @@ body {
   color: var(--foreground);
   font-family: var(--font-sans);
 }
+
+/* Mapbox GL CSS */
+@import 'mapbox-gl/dist/mapbox-gl.css';
+
+/* Mapbox popup styling */
+.mapboxgl-popup.expansi-popup .mapboxgl-popup-content {
+	background: #000000;
+	color: #FFFFFF;
+	border: 1px solid #2a2a2a;
+	padding: 8px 10px;
+}
+.mapboxgl-popup.expansi-popup .mapboxgl-popup-close-button {
+	color: #FFFFFF;
+}
+.mapboxgl-popup.expansi-popup .mapboxgl-popup-tip {
+	border-top-color: #000000;
+	border-bottom-color: #000000;
+}
