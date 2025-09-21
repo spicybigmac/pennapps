@@ -682,6 +682,8 @@ const HomePage: React.FC = () => {
           <AgentPanel open={isAgentPanelOpen} point={agentPoint} onClose={() => setIsAgentPanelOpen(false)} />
         </>
       )}
+
+      {(isDataLoaded || !isFirstLoad) && !hasAnyRole(['confidential', 'secret', 'top-secret']) && <div id="headsup"><p>Login to view unregistered vessels</p></div>}
     </div>
   );
 };
