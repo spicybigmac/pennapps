@@ -98,9 +98,12 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# If you still have ais_routes, you would include it like this:
-# from api_routes.ais_routes import router as ais_router
-# app.include_router(ais_router)
+# Include API routers
+from api_routes.ais_routes import router as ais_router
+from api_routes.hotspot_routes import router as hotspot_router
+
+app.include_router(ais_router)
+app.include_router(hotspot_router)
 
 
 # Main API routes defined directly in main.py
