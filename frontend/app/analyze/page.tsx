@@ -74,7 +74,7 @@ export default function AnalyzePage() {
                 : dt.toLocaleString(undefined, {
                     year: 'numeric', month: 'short', day: '2-digit',
                     hour: '2-digit', minute: '2-digit', hour12: false, timeZone: 'UTC'
-                  }) + ' UTC';
+                  });
               const roundedLng = lngLat[0].toFixed(2);
               const roundedLat = lngLat[1].toFixed(2);
 
@@ -82,11 +82,11 @@ export default function AnalyzePage() {
                 <div class="popup-card">
                   <div class="popup-title">${title}</div>
                   <div class="popup-dl">
-                    <div class="row"><dt>timestamp</dt><dd>${formatted}</dd></div>
-                    <div class="row"><dt>location</dt><dd>${roundedLng}, ${roundedLat}</dd></div>
-                    <div class="row"><dt>classification</dt><dd>${classification}</dd></div>
-                    <div class="row"><dt>confidence</dt><dd>${(confidence * 100).toFixed(0)}%</dd></div>
-                    <div class="row"><dt>vessel length</dt><dd>${vesselLengthMeters} m</dd></div>
+                    <div class="row"><dt>Timestamp</dt><dd>${formatted}</dd></div>
+                    <div class="row"><dt>Location</dt><dd>${roundedLng}, ${roundedLat}</dd></div>
+                    <div class="row"><dt>Classification</dt><dd>${classification}</dd></div>
+                    <div class="row"><dt>Confidence</dt><dd>${(confidence * 100).toFixed(0)}%</dd></div>
+                    <div class="row"><dt>Vessel Length</dt><dd>${vesselLengthMeters} m</dd></div>
                   </div>
                 </div>`;
 
@@ -187,7 +187,7 @@ export default function AnalyzePage() {
       <div className={`w-1/2 flex flex-col h-screen`}> 
         {/* Header */}
         <div className="p-4 border-b border-gray-800">
-          <h1 className="text-2xl font-semibold">OverSEAr Analysis Center</h1>
+          <h1 className="text-2xl font-semibold">OverSea Analysis Center</h1>
           <p className="text-sm text-gray-400">AI-powered maritime surveillance analysis</p>
         </div>
 
