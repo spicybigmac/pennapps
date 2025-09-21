@@ -13,7 +13,7 @@ export default function AuthNav(props: AuthNavProps = {}) {
   const { isCollapsed = false } = props;
   const { user, error, isLoading } = useAuth();
 
-  if (isLoading) return <div className="text-gray-400">Loading...</div>;
+  if (isLoading) return <div className="text-gray-400"></div>;
   if (error) return <div className="text-red-400">Error: {error.message}</div>;
 
   return (
@@ -23,18 +23,70 @@ export default function AuthNav(props: AuthNavProps = {}) {
           <HoverLogout name={"Welcome, " + user.name + "."} isCollapsed={isCollapsed} />
         </>
       ) : (
-        <Link 
-          href="/auth/login" 
-          className={`flex items-center px-3 py-1 bg-white hover:bg-gray-300 text-black text-sm rounded transition-colors ${
-            isCollapsed ? 'justify-center' : ''
-          }`}
-          title={isCollapsed ? 'Login' : undefined}
-        >
-          <FiLogIn className={`w-4 h-4 ${isCollapsed ? '' : 'mr-2'}`} />
-          {!isCollapsed && 'Login'}
-        </Link>
+        <LoginButton isCollapsed={isCollapsed} />
       )}
     </div>
+  );
+}
+
+function LoginButton({ isCollapsed }: { isCollapsed: boolean }) {
+  const [displayedText, setDisplayedText] = useState('');
+  const [isTyping, setIsTyping] = useState(false);
+  const typingTimer = useRef<number | null>(null);
+
+  const loginText = 'Login';
+
+  // Typewriter effect
+  useEffect(() => {
+    if (!isCollapsed && loginText) {
+      setIsTyping(true);
+      setDisplayedText('');
+      let currentIndex = 0;
+      
+      const typeNextChar = () => {
+        if (currentIndex < loginText.length) {
+          setDisplayedText(loginText.slice(0, currentIndex + 1));
+          currentIndex++;
+          typingTimer.current = window.setTimeout(typeNextChar, 50); // 50ms delay between characters
+        } else {
+          setIsTyping(false);
+        }
+      };
+      
+      typingTimer.current = window.setTimeout(typeNextChar, 100); // Initial delay
+    } else {
+      setDisplayedText('');
+      setIsTyping(false);
+      if (typingTimer.current) {
+        window.clearTimeout(typingTimer.current);
+        typingTimer.current = null;
+      }
+    }
+
+    return () => {
+      if (typingTimer.current) {
+        window.clearTimeout(typingTimer.current);
+        typingTimer.current = null;
+      }
+    };
+  }, [isCollapsed, loginText]);
+
+  return (
+    <Link 
+      href="/auth/login" 
+      className={`flex items-center px-3 py-1 bg-white hover:bg-gray-300 text-black text-sm rounded transition-colors ${
+        isCollapsed ? 'justify-center' : ''
+      }`}
+      title={isCollapsed ? 'Login' : undefined}
+    >
+      <FiLogIn className={`w-4 h-5 ${isCollapsed ? '' : 'mr-2'}`} />
+      {!isCollapsed && (
+        <span>
+          {displayedText}
+          {isTyping && <span className="animate-pulse">|</span>}
+        </span>
+      )}
+    </Link>
   );
 }
 
