@@ -16,6 +16,7 @@ export default function AnalyzePage() {
   const [inputValue, setInputValue] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [selectedTarget, setSelectedTarget] = useState<string | null>(null);
+  const [selectedLocation, setSelectedLocation] = useState<{ lat: number; lng: number } | null>(null);
   const mapContainerRef = useRef<HTMLDivElement | null>(null);
   const mapRef = useRef<mapboxgl.Map | null>(null);
   const { user } = useAuth();
@@ -122,11 +123,7 @@ export default function AnalyzePage() {
                 <div class="popup-card">
                   <div class="popup-title">${title}</div>
                   <div class="popup-dl">
-                    <div class="row"><dt>Timestamp</dt><dd>${formatted}</dd></div>
                     <div class="row"><dt>Location</dt><dd>${roundedLng}, ${roundedLat}</dd></div>
-                    <div class="row"><dt>Classification</dt><dd>${classification}</dd></div>
-                    <div class="row"><dt>Confidence</dt><dd>${confidencePct.toFixed(0)}%</dd></div>
-                    <div class="row"><dt>Vessel Length</dt><dd>${vesselLengthMeters} m</dd></div>
                   </div>
                 </div>`;
           new mapboxgl.Popup({ className: 'expansi-popup', maxWidth: '220px' })
@@ -135,9 +132,10 @@ export default function AnalyzePage() {
             .addTo(mapRef.current!);
 
           setSelectedTarget(title);
+          setSelectedLocation({ lng: lngLat[0], lat: lngLat[1] });
           setMessages((prev) => [
             ...prev,
-            { id: Date.now().toString(), type: 'assistant', content: title, timestamp: new Date() }
+            { id: Date.now().toString(), type: 'assistant', content: `Vessel selected: ${title}`, timestamp: new Date() }
           ]);
         });
 
@@ -156,7 +154,7 @@ export default function AnalyzePage() {
     };
   }, []);
 
-  const handleApiCall = async (prompt: string) => {
+  const handleApiCall = async (prompt: string, location?: { lat: number, lng: number } | null) => {
     setIsLoading(true);
 
     try {
@@ -168,6 +166,7 @@ export default function AnalyzePage() {
         body: JSON.stringify({
           prompt: prompt,
           user_id: user?.sub || 'anonymous',
+          location: location || undefined
         }),
       });
 
@@ -223,7 +222,7 @@ export default function AnalyzePage() {
         timestamp: new Date()
     };
     setMessages(prev => [...prev, userMessage]);
-    handleApiCall(prompt);
+    handleApiCall(prompt, selectedLocation);
   };
 
   const handleSendMessage = () => {

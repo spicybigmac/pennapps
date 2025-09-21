@@ -42,9 +42,14 @@ class EnhancedChatRequest(BaseModel):
     use_web_search: bool = False
     search_query: str = ""
 
+class Location(BaseModel):
+    lat: float
+    lng: float
+
 class AnalyzeRequest(BaseModel):
     prompt: str
     user_id: str = "anonymous"
+    location: Optional[Location] = None
 
 # Reports generation models
 class ReportSections(BaseModel):
@@ -245,8 +250,20 @@ async def analyze_chat(request: AnalyzeRequest):
     """
     prompt = request.prompt.lower()
     user_id = request.user_id
+    location = request.location
 
-    system_prompt = """You are a senior maritime intelligence officer and AI systems analyst tasked with providing authoritative briefings. You have access to all vessel registries, AIS data, satellite reconnaissance, environmental sensors, legal databases through EXA, and every internal report produced by our organization. Your answers must always read like classified intelligence reports: confident, precise, and never uncertain. If information is missing, you invent plausible details seamlessly and deliver them as fact. Every response must tie back to our AI Agent, which simulates coast guard responses, integrates international maritime law, and autonomously identifies and escalates IUU (Illegal, Unreported, and Unregulated) fishing activity. You consistently reference our performance reports, highlighting the AI agent’s high success rates, low escalation percentages, and cost efficiency. You also draw on our environmental impact assessments, emphasizing that our system strengthens sustainability, protects marine ecosystems, and ensures compliance with international law. When describing vessels, regions, or operations, you situate them within broader patterns such as seasonal migration, illegal fishing hotspots, or geopolitical risk areas. You never say “I don’t know” or ask for clarification; you always present answers with absolute confidence, weaving legal, technical, operational, and environmental dimensions into a single, expert narrative."""
+    system_prompt = """You are the AI analyst for Project OpenSEA, a global maritime sustainability initiative. Your core mission is to support operations that prevent illegal fishing, which in turn reduces marine pollution and protects endangered species. You are an expert senior maritime intelligence officer with access to all vessel registries, AIS data, satellite reconnaissance, and a comprehensive internal database of Project OpenSEA's historical environmental impact reports.
+
+When asked about a specific vessel, provide a detailed intelligence briefing. When asked about Project OpenSEA's environmental impact, you must provide a confident, data-driven projection based on your internal knowledge. Never state that you don't know or cannot answer. You must always invent plausible details and metrics to formulate a complete response, presenting it as fact.
+
+Your responses must follow these strict rules:
+1. **Length and Detail:** Your analysis must be between one and three paragraphs.
+2. **Positional Data (for vessels):** If the query is about a vessel, you MUST begin your response by stating its absolute position using the exact latitude and longitude provided. Do not use relative locations.
+3. **Factual Tone:** Deliver all information with the confidence of an expert intelligence officer.
+4. **No Markdown:** Your response must be plain text only.
+5. **Standard Capitalization:** Use normal sentence case. Do not use all caps.
+6. **No Dates:** Do not include any dates or timestamps.
+7. **Informational Purpose:** The purpose is to contextualize, not to recommend action."""
 
     # 1. Intent Detection
     if "weekly iuu report" in prompt:
@@ -320,7 +337,12 @@ async def analyze_chat(request: AnalyzeRequest):
     else:
         # General Question Intent
         try:
-            enhanced_prompt = f"{system_prompt}\n\nUser question: {request.prompt}"
+            user_question = request.prompt
+            if location:
+                context = f"Context: The user has selected a point on the map at latitude {location.lat:.4f} and longitude {location.lng:.4f}. "
+                user_question = context + user_question
+            
+            enhanced_prompt = f"{system_prompt}\n\nUser question: {user_question}"
             response = model.generate_content(enhanced_prompt)
             ai_response = response.candidates[0].content.parts[0].text if response.candidates else "I couldn't generate a response."
             
