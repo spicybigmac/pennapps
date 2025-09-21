@@ -248,10 +248,10 @@ const HomePage: React.FC = () => {
         method: 'GET',
         headers: { 'Content-Type': 'application/json' },
       });
-      const data: HotspotData[] = await response.json();
+      const data: any = await response.json();
       if(response.ok){
-        //setHotspotData(data);
-        console.log(data);
+        setHotspotData(data["hotspots"]);
+        console.log(data,data["hotspots"]);
       }
     } catch (error) {
       console.log('Error fetching hotspot data:', error);
@@ -356,6 +356,15 @@ const HomePage: React.FC = () => {
           polygonSideColor={() => 'rgba(0,0,0,0)'}
           polygonAltitude={0}
           polygonStrokeColor={() => 'rgba(255, 255, 255, 1)'}
+
+          ringsData={hotspotData}
+          ringLat="lat"
+          ringLng="lon"
+          ringAltitude={0}
+          ringColor={() => "rgba(255,0,0,1)"}
+          ringMaxRadius={(e:any)=>300*e.size}
+          ringPropagationSpeed={(e:any)=>300*e.size/5}
+          ringRepeatPeriod={1000}
 
           showGraticules={true}
 
