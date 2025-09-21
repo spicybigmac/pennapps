@@ -135,7 +135,7 @@ export default function AnalyzePage() {
           setSelectedTarget(title);
           setMessages((prev) => [
             ...prev,
-            { id: Date.now().toString(), type: 'assistant', content: title, timestamp: new Date() }
+            { id: Date.now().toString(), type: 'assistant', content: `Selected vessel: ${title}`, timestamp: new Date() }
           ]);
         });
 
@@ -154,26 +154,7 @@ export default function AnalyzePage() {
     };
   }, []);
 
-  const handleTestAnalysis = () => {
-    setIsLoading(true);
-    
-    // Simulate analysis generation
-    setTimeout(() => {
-      const analysisContent = `High Priority Alert\nRisk Score: 87/100\n\nVessel: MMSI: 123456789\nActivity: Suspected IUU Fishing\nLocation: Bodega Bay, California\n\nKey Indicators:\n• Vessel showing fishing-like behavior patterns\n• Speed profile indicates trawling activity\n• Located within Marine Protected Area\n• AIS transmission gaps detected\n• Satellite imagery shows vessel activity during dark period\n\nAnalysis complete! I've detected suspicious vessel activity in Bodega Bay. Would you like me to explain any specific aspect of this analysis?`;
-
-      const analysisMessage: ChatMessage = {
-        id: Date.now().toString(),
-        type: 'assistant',
-        content: analysisContent,
-        timestamp: new Date(),
-      };
-
-      setMessages((prev) => [...prev, analysisMessage]);
-      setIsLoading(false);
-    }, 2000);
-  };
-
-  const handleSendMessage = () => {
+  const handleSendMessage = async () => {
     if (!inputValue.trim()) return;
 
     const userMessage: ChatMessage = {
@@ -187,26 +168,55 @@ export default function AnalyzePage() {
     setInputValue('');
     setIsLoading(true);
 
-    // Simulate AI response
-    setTimeout(() => {
-      const responses = [
-        "Based on the vessel's speed profile and heading changes, this appears to be typical trawling behavior. The vessel is moving at 2-4 knots with frequent course corrections, which matches fishing patterns.",
-        "The satellite imagery shows the vessel was active during a period when its AIS was offline, indicating potential 'dark activity' - a common sign of illegal fishing operations.",
-        "The vessel is currently positioned within the Bodega Bay Marine Protected Area where commercial fishing is prohibited. This constitutes a clear violation of maritime law.",
-        "The risk score of 87/100 is based on multiple factors: location violation (40 points), dark activity (25 points), fishing behavior patterns (15 points), and historical data (7 points).",
-        "I recommend immediate dispatch of patrol units to intercept this vessel. The evidence suggests ongoing illegal fishing activity that poses a threat to marine conservation efforts."
-      ];
+    try {
+      const res = await fetch('http://127.0.0.1:8000/api/ai/analyze', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ prompt: inputValue, user_id: 'test-user' }), // Replace with actual user ID
+      });
 
+      if (!res.ok) {
+        throw new Error('Backend error');
+      }
+
+      const data = await res.json();
+      
       const assistantMessage: ChatMessage = {
         id: (Date.now() + 1).toString(),
         type: 'assistant',
-        content: responses[Math.floor(Math.random() * responses.length)],
+        content: data.content,
         timestamp: new Date()
       };
-
+      
       setMessages(prev => [...prev, assistantMessage]);
+
+      if (data.type === 'location' && data.data) {
+        const { lat, lng, name } = data.data;
+        if (mapRef.current) {
+          mapRef.current.flyTo({
+            center: [lng, lat],
+            zoom: 12,
+            speed: 1.5
+          });
+
+          new mapboxgl.Popup({ closeOnClick: false })
+            .setLngLat([lng, lat])
+            .setHTML(`<h4>${name}</h4>`)
+            .addTo(mapRef.current);
+        }
+      }
+    } catch (error) {
+      console.error('Error fetching from analyze API:', error);
+      const errorMessage: ChatMessage = {
+        id: (Date.now() + 1).toString(),
+        type: 'assistant',
+        content: "Sorry, I encountered an error. Please try again.",
+        timestamp: new Date()
+      };
+      setMessages(prev => [...prev, errorMessage]);
+    } finally {
       setIsLoading(false);
-    }, 1500);
+    }
   };
 
   const handleKeyPress = (e: React.KeyboardEvent) => {
@@ -217,7 +227,7 @@ export default function AnalyzePage() {
   };
 
   return (
-    <div className="flex h-screen bg-black text-white font-sans relative" style={{marginLeft:"10px"}}>
+    <div className="flex h-screen bg-black text-white font-sans relative">
       {/* Left Panel - Analysis Chat */}
       <div className={`w-1/2 flex flex-col h-screen`}> 
         {/* Header */}
@@ -226,16 +236,7 @@ export default function AnalyzePage() {
           <p className="text-sm text-gray-400">AI-powered maritime surveillance analysis</p>
         </div>
 
-        {/* Test Button */}
-        <div className="p-4 border-b border-gray-800">
-          <button
-            onClick={handleTestAnalysis}
-            disabled={isLoading}
-            className="w-full bg-black hover:bg-white disabled:bg-black border border-gray-700 hover:text-black text-white font-medium py-3 px-4 rounded-lg transition-colors"
-          >
-            {isLoading ? 'Running Analysis...' : selectedTarget ? `Run Analysis On ${selectedTarget}` : 'Run Analysis'}
-          </button>
-        </div>
+        {/* Test Button has been removed and integrated into the chat */}
 
         {/* Chat Messages */}
         <div className="flex-1 overflow-y-auto p-4 space-y-4">

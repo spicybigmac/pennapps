@@ -20,13 +20,17 @@ from api_routes import mongodb
 
 # Configure Gemini
 genai.configure(api_key=os.getenv("GEMINI_API_KEY"))
-model = genai.GenerativeModel("gemini-2.5-flash-lite")
+model = genai.GenerativeModel("gemini-1.5-flash")
 
 # Configure Exa
 exa = Exa(api_key=os.getenv("EXA_API_KEY"))
 
 # Pydantic Models (moved from ai_routes.py)
 class ChatRequest(BaseModel):
+    prompt: str
+    user_id: str = "anonymous"
+
+class AnalyzeRequest(BaseModel):
     prompt: str
     user_id: str = "anonymous"
 
@@ -159,6 +163,82 @@ async def gemini_chat(request: ChatRequest):
     
     # except Exception as e:
     #     raise HTTPException(status_code=500, detail=f"Error generating response: {str(e)}")
+
+@app.post("/api/ai/analyze")
+async def analyze_chat(request: AnalyzeRequest):
+    """
+    Handles chat requests from the analyze page, with intent detection.
+    """
+    prompt = request.prompt.lower()
+    user_id = request.user_id
+
+    # 1. Intent Detection
+    if "summarize" in prompt and "report" in prompt:
+        # Report Summarization Intent
+        try:
+            # For now, we get the latest report for the user.
+            # A more robust solution would parse a report name from the prompt.
+            report_doc = mongodb.get_latest_report_for_user(user_id)
+            if not report_doc:
+                return {"type": "text", "content": "I couldn't find any recent reports for you."}
+
+            report_content = report_doc.get("report", "")
+            summary_prompt = f"Please summarize the key findings from this report:\n\n{report_content}"
+            
+            response = model.generate_content(summary_prompt)
+            summary = response.candidates[0].content.parts[0].text if response.candidates else "I was unable to summarize the report."
+            
+            mongodb.logPrompt(user_id, request.prompt, summary)
+            return {"type": "text", "content": summary}
+
+        except Exception as e:
+            raise HTTPException(status_code=500, detail=f"Error summarizing report: {str(e)}")
+
+    elif "find" in prompt and "boat" in prompt and "near" in prompt:
+        # Boat Finding Intent
+        try:
+            # Placeholder: Extract location and find a boat. This is non-trivial.
+            # For this demo, we'll return a hardcoded boat location.
+            location_str = prompt.split("near")[-1].strip()
+            
+            # Here you would typically geocode location_str and query your database.
+            # Let's find a random boat from the DB for now.
+            vessels = mongodb.getPos()
+            if not vessels:
+                return {"type": "text", "content": "I couldn't find any vessel data."}
+
+            random_vessel = random.choice(vessels)
+            vessel_name = random_vessel.get("shipName", "Unnamed Vessel")
+            lat = random_vessel.get("latitude")
+            lng = random_vessel.get("longitude")
+
+            content = f"I've found the vessel '{vessel_name}' near {location_str.title()}. Centering the map on it now."
+            mongodb.logPrompt(user_id, request.prompt, content)
+            
+            return {
+                "type": "location", 
+                "content": content,
+                "data": {
+                    "name": vessel_name,
+                    "lat": lat,
+                    "lng": lng
+                }
+            }
+        except Exception as e:
+            raise HTTPException(status_code=500, detail=f"Error finding boat: {str(e)}")
+
+    else:
+        # General Question Intent
+        try:
+            response = model.generate_content(request.prompt)
+            ai_response = response.candidates[0].content.parts[0].text if response.candidates else "I couldn't generate a response."
+            
+            mongodb.logPrompt(user_id, request.prompt, ai_response)
+            return {"type": "text", "content": ai_response}
+
+        except Exception as e:
+            raise HTTPException(status_code=500, detail=f"Error with Gemini: {str(e)}")
+
 
 # Exa Search (moved from ai_routes.py)
 @app.post("/api/ai/exa/search")
