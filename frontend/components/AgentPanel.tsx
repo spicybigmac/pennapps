@@ -190,9 +190,11 @@ export default function AgentPanel({ open, point, onClose }: AgentPanelProps) {
       className="absolute inset-y-0 left-0 z-[1050]"
       aria-hidden={!open}
       style={{
+        position: "absolute",
         width: 560,
         transform: open ? 'translateX(0)' : 'translateX(-105%)',
         transition: 'transform 260ms ease',
+        marginLeft:"12px"
       }}
     >
       <div className="h-full bg-black border-r border-gray-900 text-white shadow-2xl flex flex-col">

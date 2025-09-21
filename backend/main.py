@@ -351,7 +351,7 @@ async def generate_report(request: ReportGenerateRequest):
 
         # Log prompt for auditing (truncate content)
         try:
-            mongodb.logPrompt(request.user_id, prompt, json.dumps(report_json)[:5000])
+            mongodb.logReport(request.user_id, json.dumps(report_json)[:5000])
         except Exception:
             pass
 
