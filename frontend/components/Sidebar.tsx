@@ -31,7 +31,10 @@ const Sidebar = () => {
   return (
     <div className="w-64 bg-black text-white h-screen p-6 flex flex-col border-r border-white/20">
       <div className="mb-10 select-none">
-        <div className="text-2xl font-bold tracking-widest">OverSEAr</div>
+        <div className="flex items-center space-x-3">
+          <img src="/OverSEAlogo.png" alt="OverSea" className="w-7 h-7 rounded" />
+          <div className="text-2xl font-bold tracking-widest">OverSea</div>
+        </div>
         <div className="h-px mt-3 bg-gradient-to-r from-white/60 to-white/0" />
       </div>
       <nav className="flex flex-col space-y-2 flex-1">

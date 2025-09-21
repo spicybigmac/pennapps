@@ -1,6 +1,6 @@
 # Pennapps 2025 - by Tejas, Ishaan, Henry, and Marcus
 
-# OverSEAr
+# OverSEA
 
 Dark vessel scanning for sustainable seas.
 
@@ -15,7 +15,7 @@ _Figure 1: 72-76% of industrial fishing vessels are not publicly tracked._
 
 While coast guards make every effort to apprehend these vessels, dedicating 1 of its 11 statutory missions to protecting marine life, the sheer size of the exclusive economic zones they patrol combined with limited resources makes this a difficult job.
 
-OverSEAr uses satellite data combined with the automatic identification system (AIS) broadcasting vessels' positions to detect illegal fishing, and with our ML model and AI agent, streamlines the process of stopping unregistered fishing vessels.
+OverSEA uses satellite data combined with the automatic identification system (AIS) broadcasting vessels' positions to detect illegal fishing, and with our ML model and AI agent, streamlines the process of stopping unregistered fishing vessels.
 
 # Key Features
 
