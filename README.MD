@@ -19,7 +19,13 @@ OverSEA uses satellite data combined with the automatic identification system (A
 
 # Key Features
 
+After corroborating the satellite data with AIS data to reveal untracked fishing vessels, each of their points are stored in MongoDB for efficient access and are marked out on a 3D interactive globe for easy, one-click access, and "hot spots" for untracked fishing.
 
+After fetching the satellite data from Global Fishing Watch, each point of fishing vessel detection is stored in MongoDB for efficient access and are marked out on a 3D interactive globe for easy, one-click access.
+
+To interact with the satellite data, users can use the Gemini powered AI agent for actionable suggestions, supported by Exa to research the maritime laws at the coordinates of each fishing vessel. The Gemini report creator estimates the environmental impact of illegal fishing over a user-determined time period, allowing the user to gain a deeper understanding into the global untracked fishing industry. A chat agent is available to help the user process the vessel data for next steps and regions to be prioritized.
+
+While the globe showing general vessel activity is available for all users, Auth0 is used as a secure way to store the clearance level for each user, with certain features only available to higher clearance levels. For example distinction between AIS tracked and non tracked vessels and the AI simulation/research agent are only available to Confidential and above.
 
 # Tech Stack
 
@@ -27,11 +33,15 @@ OverSEA uses satellite data combined with the automatic identification system (A
 - Satellite Synthetic Aperture Radar (SAR) data from Sentinel-1
 - AIS data
 
-### Tensorflow
-- Predicts a Priority Score for each region based on the number of registered and unregistered fishing vessels
+### SciPy Clustering Model
+- Predicts hot-spots for illegal fishing in the waters
+- Density-Based Clustering
+- Multi-Factor Risk Assessment
+- Hotspot Influence Decay
+- Enhanced Risk Models (Port Proximity Factor, Fishing Season Factor)
 
 ### Auth0
-- Securely controls Clearance Level for each user
+- Securely controls Clearance Level and specific permissions for each user
 
 ### MongoDB
 - Stores vessel analysis results-acts as the pipeline between the data and the frontend
@@ -39,6 +49,7 @@ OverSEA uses satellite data combined with the automatic identification system (A
 
 ### Google Gemini
 - Powers AI Agent and creates reports
+- Smooths user experience
 
 ### Exa
 - Researches the local maritime laws of a certain area

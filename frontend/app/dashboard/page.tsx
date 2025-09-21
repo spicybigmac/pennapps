@@ -49,6 +49,10 @@ const HomePage: React.FC = () => {
   const [hoveredVessel, setHoveredVessel] = useState<VesselData | null>(null);
   const [popupPosition, setPopupPosition] = useState<{ x: number; y: number } | null>(null);
 
+  // Image functionality state
+  const [vesselImageUrl, setVesselImageUrl] = useState<string | null>(null);
+  const [imageLoading, setImageLoading] = useState<boolean>(false);
+
   const [hotspotData, setHotspotData] = useState<HotspotData[]>([]);
   const [isDataLoaded, setIsDataLoaded] = useState(false);
   const [isFirstLoad, setIsFirstLoad] = useState(true);
@@ -197,6 +201,38 @@ const HomePage: React.FC = () => {
     setClusteredData(clusters);
   }, [globeEl, timeL, timeR, showRegistered]);
 
+  // Function to fetch vessel image
+  const fetchVesselImage = useCallback(async () => {
+    if (!hoveredVessel) return;
+    
+    setImageLoading(true);
+    setVesselImageUrl(null);
+    
+    try {
+      const timestamp = Date.now();
+      const response = await fetch(`http://127.0.0.1:8000/api/images/vessel-image?t=${timestamp}`, {
+        method: 'GET',
+        headers: {
+          'Cache-Control': 'no-cache',
+          'Pragma': 'no-cache'
+        },
+        cache: 'no-cache'
+      });
+      
+      if (response.ok) {
+        const blob = await response.blob();
+        const imageUrl = URL.createObjectURL(blob);
+        setVesselImageUrl(imageUrl);
+      } else {
+        console.error('Failed to fetch vessel image:', response.status);
+      }
+    } catch (error) {
+      console.error('Error fetching vessel image:', error);
+    } finally {
+      setImageLoading(false);
+    }
+  }, [hoveredVessel]);
+
   const handleZoom = useCallback(() => { // Removed `pov` as it's not used directly from the param
     clusterMarkers(vesselData); // Cluster filtered data
     setHoveredVessel(null);
@@ -293,6 +329,28 @@ const HomePage: React.FC = () => {
       window.removeEventListener('focus', handleFocus);
     };
   }, [fetchData]);
+
+  // Fetch image when vessel is selected
+  useEffect(() => {
+    if (hoveredVessel) {
+      fetchVesselImage();
+    } else {
+      // Clean up image URL when popup is closed
+      if (vesselImageUrl) {
+        URL.revokeObjectURL(vesselImageUrl);
+        setVesselImageUrl(null);
+      }
+    }
+  }, [hoveredVessel, fetchVesselImage]);
+
+  // Clean up image URL on component unmount
+  useEffect(() => {
+    return () => {
+      if (vesselImageUrl) {
+        URL.revokeObjectURL(vesselImageUrl);
+      }
+    };
+  }, [vesselImageUrl]);
 
   // Helper to format timestamp for display
   const formatTimestamp = (timestamp: number) => {
@@ -492,6 +550,7 @@ const HomePage: React.FC = () => {
             <ReactCountryFlag countryCode={hoveredVessel.flag} style={{ float: 'right' }} />
           </div>
 
+          {/* Vessel Image Section */}
           <div
             style={{
               width: '100%',
@@ -504,10 +563,38 @@ const HomePage: React.FC = () => {
               justifyContent: 'center',
               border: '2px dashed rgba(255, 255, 255, 0.3)',
               color: 'rgba(255, 255, 255, 0.6)',
-              fontSize: '12px'
+              fontSize: '12px',
+              position: 'relative',
+              overflow: 'hidden'
             }}
           >
-            📷 Vessel Image Placeholder
+            {imageLoading ? (
+              <div style={{ textAlign: 'center' }}>
+                <div style={{
+                  width: '20px',
+                  height: '20px',
+                  border: '2px solid #333',
+                  borderTop: '2px solid #2eb700',
+                  borderRadius: '50%',
+                  animation: 'spin 1s linear infinite',
+                  margin: '0 auto 8px'
+                }}></div>
+                Loading SAR image...
+              </div>
+            ) : vesselImageUrl ? (
+              <img
+                src={vesselImageUrl}
+                alt="SAR Image"
+                style={{
+                  width: '100%',
+                  height: '100%',
+                  objectFit: 'cover',
+                  borderRadius: '6px'
+                }}
+              />
+            ) : (
+              '📷 Click to load SAR image'
+            )}
           </div>
 
           <div style={{ marginBottom: '10px' }}>
@@ -707,6 +794,13 @@ const HomePage: React.FC = () => {
       )}
 
       {(isDataLoaded || !isFirstLoad) && !hasAnyRole(['confidential', 'secret', 'top-secret']) && <div id="headsup"><p>Login to view unregistered vessels</p></div>}
+      
+      <style jsx>{`
+        @keyframes spin {
+          0% { transform: rotate(0deg); }
+          100% { transform: rotate(360deg); }
+        }
+      `}</style>
     </div>
   );
 };
