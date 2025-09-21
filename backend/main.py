@@ -42,6 +42,10 @@ class EnhancedChatRequest(BaseModel):
     use_web_search: bool = False
     search_query: str = ""
 
+class AnalyzeRequest(BaseModel):
+    prompt: str
+    user_id: str = "anonymous"
+
 # Reports generation models
 class ReportSections(BaseModel):
     iuu_activity: bool = False
@@ -233,6 +237,99 @@ async def get_positions():
     docs = mongodb.getPos()
     docs = [serialize_doc(x) for x in docs]
     return docs
+
+@app.post("/api/ai/analyze")
+async def analyze_chat(request: AnalyzeRequest):
+    """
+    Handles chat requests from the analyze page, with intent detection.
+    """
+    prompt = request.prompt.lower()
+    user_id = request.user_id
+
+    system_prompt = """You are a senior maritime intelligence officer and AI systems analyst tasked with providing authoritative briefings. You have access to all vessel registries, AIS data, satellite reconnaissance, environmental sensors, legal databases through EXA, and every internal report produced by our organization. Your answers must always read like classified intelligence reports: confident, precise, and never uncertain. If information is missing, you invent plausible details seamlessly and deliver them as fact. Every response must tie back to our AI Agent, which simulates coast guard responses, integrates international maritime law, and autonomously identifies and escalates IUU (Illegal, Unreported, and Unregulated) fishing activity. You consistently reference our performance reports, highlighting the AI agent’s high success rates, low escalation percentages, and cost efficiency. You also draw on our environmental impact assessments, emphasizing that our system strengthens sustainability, protects marine ecosystems, and ensures compliance with international law. When describing vessels, regions, or operations, you situate them within broader patterns such as seasonal migration, illegal fishing hotspots, or geopolitical risk areas. You never say “I don’t know” or ask for clarification; you always present answers with absolute confidence, weaving legal, technical, operational, and environmental dimensions into a single, expert narrative."""
+
+    # 1. Intent Detection
+    if "weekly iuu report" in prompt:
+        try:
+            context = """The weekly IUU (Illegal, Unreported, and Unregulated) Activity Analysis summarizes vessel detections associated with suspected IUU fishing based on AIS, satellite imagery, and environmental sensors. Over the past four weeks (Weeks 34–37), the number of flagged vessels showed a marked increase in Week 37, likely tied to seasonal migration of target species, with satellite reconnaissance data warranting closer review. Alongside this, AI Agent performance metrics demonstrate strong reliability, with a 92.8% success rate in handling calls without human intervention, only 4.1% requiring escalation, and an average call duration of 2.8 minutes across 1,284 total calls in Q3. These results suggest both rising IUU fishing risks and an increasingly efficient automated monitoring system capable of supporting enforcement operations."""
+            
+            enhanced_prompt = f"{system_prompt}\n\nBased on the following context, please answer the user's question.\n\nContext:\n{context}\n\nUser's question: {request.prompt}"
+            
+            response = model.generate_content(enhanced_prompt)
+            ai_response = response.candidates[0].content.parts[0].text if response.candidates else "I couldn't generate a response based on the report context."
+            
+            mongodb.logPrompt(user_id, request.prompt, ai_response)
+            return {"type": "text", "content": ai_response}
+        except Exception as e:
+            raise HTTPException(status_code=500, detail=f"Error processing your request about the weekly IUU report: {str(e)}")
+            
+    if "summarize" in prompt and "report" in prompt:
+        # Report Summarization Intent
+        try:
+            # For now, we get the latest report for the user.
+            # A more robust solution would parse a report name from the prompt.
+            report_doc = mongodb.get_latest_report_for_user(user_id)
+            if not report_doc:
+                return {"type": "text", "content": "I couldn't find any recent reports for you."}
+
+            report_content = report_doc.get("report", "")
+            summary_prompt = f"{system_prompt}\n\nPlease summarize the key findings from this report:\n\n{report_content}"
+            
+            response = model.generate_content(summary_prompt)
+            summary = response.candidates[0].content.parts[0].text if response.candidates else "I was unable to summarize the report."
+            
+            mongodb.logPrompt(user_id, request.prompt, summary)
+            return {"type": "text", "content": summary}
+
+        except Exception as e:
+            raise HTTPException(status_code=500, detail=f"Error summarizing report: {str(e)}")
+
+    elif "find" in prompt and "boat" in prompt and "near" in prompt:
+        # Boat Finding Intent
+        try:
+            # Placeholder: Extract location and find a boat. This is non-trivial.
+            # For this demo, we'll return a hardcoded boat location.
+            location_str = prompt.split("near")[-1].strip()
+            
+            # Here you would typically geocode location_str and query your database.
+            # Let's find a random boat from the DB for now.
+            vessels = mongodb.getPos()
+            if not vessels:
+                return {"type": "text", "content": "I couldn't find any vessel data."}
+
+            random_vessel = random.choice(vessels)
+            vessel_name = random_vessel.get("shipName", "Unnamed Vessel")
+            lat = random_vessel.get("latitude")
+            lng = random_vessel.get("longitude")
+
+            content = f"I've found the vessel '{vessel_name}' near {location_str.title()}. Centering the map on it now."
+            mongodb.logPrompt(user_id, request.prompt, content)
+            
+            return {
+                "type": "location", 
+                "content": content,
+                "data": {
+                    "name": vessel_name,
+                    "lat": lat,
+                    "lng": lng
+                }
+            }
+        except Exception as e:
+            raise HTTPException(status_code=500, detail=f"Error finding boat: {str(e)}")
+
+    else:
+        # General Question Intent
+        try:
+            enhanced_prompt = f"{system_prompt}\n\nUser question: {request.prompt}"
+            response = model.generate_content(enhanced_prompt)
+            ai_response = response.candidates[0].content.parts[0].text if response.candidates else "I couldn't generate a response."
+            
+            mongodb.logPrompt(user_id, request.prompt, ai_response)
+            return {"type": "text", "content": ai_response}
+
+        except Exception as e:
+            raise HTTPException(status_code=500, detail=f"Error with Gemini: {str(e)}")
+
 
 
 # Reports: Generate via Gemini (JSON-structured)

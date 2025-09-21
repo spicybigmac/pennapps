@@ -2,6 +2,7 @@
 
 import React, { useEffect, useRef, useState } from 'react';
 import mapboxgl from 'mapbox-gl';
+import { useAuth } from '@/hooks/useAuth';
 
 interface ChatMessage {
   id: string;
@@ -17,6 +18,7 @@ export default function AnalyzePage() {
   const [selectedTarget, setSelectedTarget] = useState<string | null>(null);
   const mapContainerRef = useRef<HTMLDivElement | null>(null);
   const mapRef = useRef<mapboxgl.Map | null>(null);
+  const { user } = useAuth();
 
   useEffect(() => {
     if (!mapContainerRef.current) return;
@@ -154,23 +156,74 @@ export default function AnalyzePage() {
     };
   }, []);
 
-  const handleTestAnalysis = () => {
+  const handleApiCall = async (prompt: string) => {
     setIsLoading(true);
-    
-    // Simulate analysis generation
-    setTimeout(() => {
-      const analysisContent = `High Priority Alert\nRisk Score: 87/100\n\nVessel: MMSI: 123456789\nActivity: Suspected IUU Fishing\nLocation: Bodega Bay, California\n\nKey Indicators:\n• Vessel showing fishing-like behavior patterns\n• Speed profile indicates trawling activity\n• Located within Marine Protected Area\n• AIS transmission gaps detected\n• Satellite imagery shows vessel activity during dark period\n\nAnalysis complete! I've detected suspicious vessel activity in Bodega Bay. Would you like me to explain any specific aspect of this analysis?`;
 
-      const analysisMessage: ChatMessage = {
+    try {
+      const response = await fetch('http://localhost:8000/api/ai/analyze', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          prompt: prompt,
+          user_id: user?.sub || 'anonymous',
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+      const data = await response.json();
+
+      const assistantMessage: ChatMessage = {
         id: Date.now().toString(),
         type: 'assistant',
-        content: analysisContent,
+        content: data.content,
         timestamp: new Date(),
       };
 
-      setMessages((prev) => [...prev, analysisMessage]);
+      setMessages((prev) => [...prev, assistantMessage]);
+      
+      if (data.type === 'location' && data.data) {
+        const { lat, lng } = data.data;
+        if (mapRef.current && typeof lat === 'number' && typeof lng === 'number') {
+            mapRef.current.flyTo({
+                center: [lng, lat],
+                zoom: 12,
+                essential: true
+            });
+        }
+      }
+
+    } catch (error) {
+      console.error("Failed to fetch analysis:", error);
+      const errorMessage: ChatMessage = {
+        id: Date.now().toString(),
+        type: 'assistant',
+        content: "Sorry, I couldn't get a response from the server. Please try again later.",
+        timestamp: new Date(),
+      };
+      setMessages((prev) => [...prev, errorMessage]);
+    } finally {
       setIsLoading(false);
-    }, 2000);
+    }
+  };
+
+  const handleTestAnalysis = () => {
+    const prompt = selectedTarget 
+      ? `Run analysis on ${selectedTarget}` 
+      : 'Generate the weekly IUU report';
+    
+    const userMessage: ChatMessage = {
+        id: Date.now().toString(),
+        type: 'user',
+        content: prompt,
+        timestamp: new Date()
+    };
+    setMessages(prev => [...prev, userMessage]);
+    handleApiCall(prompt);
   };
 
   const handleSendMessage = () => {
@@ -185,28 +238,7 @@ export default function AnalyzePage() {
 
     setMessages(prev => [...prev, userMessage]);
     setInputValue('');
-    setIsLoading(true);
-
-    // Simulate AI response
-    setTimeout(() => {
-      const responses = [
-        "Based on the vessel's speed profile and heading changes, this appears to be typical trawling behavior. The vessel is moving at 2-4 knots with frequent course corrections, which matches fishing patterns.",
-        "The satellite imagery shows the vessel was active during a period when its AIS was offline, indicating potential 'dark activity' - a common sign of illegal fishing operations.",
-        "The vessel is currently positioned within the Bodega Bay Marine Protected Area where commercial fishing is prohibited. This constitutes a clear violation of maritime law.",
-        "The risk score of 87/100 is based on multiple factors: location violation (40 points), dark activity (25 points), fishing behavior patterns (15 points), and historical data (7 points).",
-        "I recommend immediate dispatch of patrol units to intercept this vessel. The evidence suggests ongoing illegal fishing activity that poses a threat to marine conservation efforts."
-      ];
-
-      const assistantMessage: ChatMessage = {
-        id: (Date.now() + 1).toString(),
-        type: 'assistant',
-        content: responses[Math.floor(Math.random() * responses.length)],
-        timestamp: new Date()
-      };
-
-      setMessages(prev => [...prev, assistantMessage]);
-      setIsLoading(false);
-    }, 1500);
+    handleApiCall(userMessage.content);
   };
 
   const handleKeyPress = (e: React.KeyboardEvent) => {
