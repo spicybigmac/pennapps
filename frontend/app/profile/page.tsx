@@ -40,7 +40,7 @@ export default function Profile() {
   }
 
   return (
-    <div className="p-8">
+    <div className="p-8" style={{marginLeft:"104px"}}>
       <div className="max-w-2xl mx-auto">
         <h1 className="text-3xl font-bold text-white mb-8">Profile</h1>
         

@@ -55,7 +55,9 @@ class ReportGenerateRequest(BaseModel):
     time_start: Optional[str] = None
     time_end: Optional[str] = None
     clearance: str = "Public Trust"
+    user_id: str = "anonymous"
     sections: ReportSections
+    title: Optional[str] = ""
 
 # @asynccontextmanager
 # async def lifespan(app: FastAPI):
@@ -248,7 +250,7 @@ async def generate_report(request: ReportGenerateRequest):
         if request.sections.iuu_activity:
             selected_sections.append("Weekly IUU Activity Analysis")
         if request.sections.ai_voice_agent:
-            selected_sections.append("AI Voice Agent Performance")
+            selected_sections.append("AI Agent Performance")
         if request.sections.vessel_tracks:
             selected_sections.append("Vessel Track Details")
         if request.sections.economic_impact:
@@ -304,8 +306,12 @@ async def generate_report(request: ReportGenerateRequest):
         )
 
         sections_list = ", ".join(selected_sections)
+        report_title = request.title.strip() if request.title and request.title.strip() else "Maritime Operations Report"
+        summary_description = f"a summary covering {sections_list} for {time_window_str}"
+        intro_sentence = f"This report is titled '{report_title}' and serves as {summary_description}."
+
         prompt = (
-            f"You are an intelligence analyst assisting a maritime monitoring team working on IUU (Illegal, Unreported, and Unregulated) fishing detection and response. Generate a polished, decision-ready report for the PennApps operational console covering {sections_list} for {time_window_str}.\n\n"
+            f"{intro_sentence}. You are an intelligence analyst assisting a maritime monitoring team working on IUU (Illegal, Unreported, and Unregulated) fishing detection and response. Generate a polished, decision-ready report for the PennApps operational console.\n\n"
             f"Tailor the content to the audience clearance level \"{request.clearance}\". {clearance_instructions}\n\n"
             "Return STRICT JSON ONLY (no markdown, no code fences, no prose outside JSON) that conforms to this schema:" + schema_block + "\n"
             "Rules:\n"
@@ -350,7 +356,7 @@ async def generate_report(request: ReportGenerateRequest):
 
         # Log prompt for auditing (truncate content)
         try:
-            mongodb.logPrompt("report_generator", prompt, json.dumps(report_json)[:5000])
+            mongodb.logReport(request.user_id, json.dumps(report_json)[:5000])
         except Exception:
             pass
 

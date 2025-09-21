@@ -14,9 +14,3 @@ pandas
 geopandas
 scipy
 scikit-learn
-matplotlib
-seaborn
-shapely
-rasterio
-requests
-asyncio

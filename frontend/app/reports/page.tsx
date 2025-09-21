@@ -2,6 +2,7 @@
 import Link from 'next/link';
 import React, { useState } from 'react';
 import Modal from '../../components/Modal';
+import { useAuth } from '../../hooks/useAuth';
 
 interface Report {
   id: string;
@@ -42,6 +43,7 @@ for (let i = 0; i < 24; i++) {
 const ReportsPage = () => {
   const [isShareModalOpen, setIsShareModalOpen] = useState(false);
   const [reportToShare, setReportToShare] = useState<Report | null>(null);
+  const { user } = useAuth();
 
   // Form state
   const [dateStart, setDateStart] = useState<string>('');
@@ -62,6 +64,7 @@ const ReportsPage = () => {
   const [generatedReport, setGeneratedReport] = useState<any>(null);
   const [includedSections, setIncludedSections] = useState<string[]>([]);
   const [lastGeneratedId, setLastGeneratedId] = useState<string | null>(null);
+  const [titleInput, setTitleInput] = useState<string>('');
 
   const handleShareClick = (report: Report) => {
     setReportToShare(report);
@@ -84,6 +87,8 @@ const ReportsPage = () => {
         time_start: timeStart || null,
         time_end: timeEnd || null,
         clearance,
+        user_id: user?.sub || 'anonymous',
+        title: titleInput.trim(),
         sections: {
           iuu_activity: sections.iuu_activity,
           ai_voice_agent: sections.ai_voice_agent,
@@ -115,12 +120,13 @@ const ReportsPage = () => {
 
       // Create a lightweight report entry and persist the JSON by id in localStorage
       const id = `generated-${Date.now()}`;
-      const title = 'Generated Report';
+      const title = (titleInput && titleInput.trim()) ? titleInput.trim() : 'Generated Report';
       const date = new Date().toISOString().slice(0, 10);
       const clearanceSaved = clearance;
       const storageKey = `report_json_${id}`;
       try {
         localStorage.setItem(storageKey, JSON.stringify(reportJson));
+        localStorage.setItem(`report_title_${id}`, title);
       } catch (e) {
         console.warn('Failed saving report HTML to localStorage', e);
       }
@@ -137,7 +143,7 @@ const ReportsPage = () => {
   };
 
   return (
-    <div className="flex-1 p-8 text-white flex">
+    <div className="flex-1 p-8 text-white flex" style={{marginLeft:"104px"}}>
       {/* Left side: Reports List */}
       <div className="w-1/2 pr-8 border-r border-gray-800">
         <h1 className="text-3xl font-bold mb-4">Reports</h1>
@@ -195,6 +201,17 @@ const ReportsPage = () => {
           <p className="text-gray-400 mb-6">Customize and create a new report based on the latest data.</p>
           
           <div className="space-y-6 flex-1">
+            {/* Report Title */}
+            <div>
+              <label className="block text-sm font-medium text-gray-400 mb-2">Report Title</label>
+              <input
+                value={titleInput}
+                onChange={(e) => setTitleInput(e.target.value)}
+                type="text"
+                placeholder="e.g., Southeast Patrol IUU Summary"
+                className="w-full bg-black border border-gray-700 rounded-md p-2 text-white font-sans"
+              />
+            </div>
             {/* Date Range */}
             <div>
               <label className="block text-sm font-medium text-gray-400 mb-2">Date Range</label>
@@ -245,7 +262,7 @@ const ReportsPage = () => {
                   <span className="w-5 h-5 border-2 border-gray-700 rounded-sm flex items-center justify-center transition-colors peer-checked:bg-white peer-checked:border-gray-400 peer-focus-visible:ring-2 peer-focus-visible:ring-offset-2 peer-focus-visible:ring-white ring-offset-black">
                     <svg className="w-3 h-3 text-black hidden peer-checked:block" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="5" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
                   </span>
-                  <span>AI Voice Agent Performance</span>
+                  <span>AI Agent Performance</span>
                 </label>
                 <label className="flex items-center space-x-3 font-sans cursor-pointer">
                   <input checked={sections.vessel_tracks} onChange={() => handleSectionToggle('vessel_tracks')} type="checkbox" className="peer hidden" />

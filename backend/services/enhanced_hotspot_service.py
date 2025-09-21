@@ -9,32 +9,20 @@ Advanced hotspot detection service that integrates:
 - Enhanced statistical models for hotspot detection
 """
 
-import asyncio
-import aiohttp
 import logging
-import json
-import os
 import numpy as np
-import pandas as pd
-from datetime import datetime, timedelta
+from datetime import datetime
 from pathlib import Path
-from typing import Dict, List, Tuple, Optional, Any
-import requests
-from scipy import stats
+from typing import Dict, List, Optional, Any
 from scipy.spatial.distance import cdist
-from scipy.ndimage import gaussian_filter
 from sklearn.neighbors import KernelDensity
-from sklearn.preprocessing import StandardScaler
-import matplotlib.pyplot as plt
-import seaborn as sns
-from shapely.geometry import Point, Polygon
 import warnings
 warnings.filterwarnings('ignore')
 
 # Import MongoDB functions
 import sys
 sys.path.append(str(Path(__file__).parent.parent))
-from api_routes.mongodb import getVesselDataForHotspotAnalysis, getAISSummary
+from api_routes.mongodb import getVesselDataForHotspotAnalysis
 
 logger = logging.getLogger(__name__)
 

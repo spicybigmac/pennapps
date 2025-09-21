@@ -119,7 +119,7 @@ export default function AgentPanel({ open, point, onClose }: AgentPanelProps) {
         const geminiResponse = await fetch("http://127.0.0.1:8000/api/ai/gemini/chat", {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ prompt: chatPrompt, user_id: point.id}),
+          body: JSON.stringify({ prompt: chatPrompt, user_id: user?.sub || 'anonymous'}),
         });
 
         if(!geminiResponse.ok){
@@ -190,9 +190,11 @@ export default function AgentPanel({ open, point, onClose }: AgentPanelProps) {
       className="absolute inset-y-0 left-0 z-[1050]"
       aria-hidden={!open}
       style={{
+        position: "absolute",
         width: 560,
         transform: open ? 'translateX(0)' : 'translateX(-105%)',
         transition: 'transform 260ms ease',
+        marginLeft:"104px"
       }}
     >
       <div className="h-full bg-black border-r border-gray-900 text-white shadow-2xl flex flex-col">
@@ -228,7 +230,7 @@ export default function AgentPanel({ open, point, onClose }: AgentPanelProps) {
                 </li>
                 <li>
                   <span className="text-gray-500">Timestamp:</span>{' '}
-                  {new Date(point.timestamp).toLocaleString()}
+                  {point.timestamp}
                 </li>
               </ul>
             </div>

@@ -1,14 +1,13 @@
 'use client';
 
 import dynamic from 'next/dynamic';
-import React, { useRef, useEffect, useState } from 'react';
+import React, { useRef, useEffect, useState, useCallback } from 'react';
+import { useRouter } from 'next/navigation'; // Import useRouter for navigation
 import * as topojson from 'topojson-client';
-import AgentToast from '../components/AgentToast';
-import AgentPanel, { type AgentPoint } from '../components/AgentPanel';
-import { useAuth } from '../hooks/useAuth';
 
 const Globe = dynamic(() => import('react-globe.gl'), { ssr: false });
 
+// Interfaces (assuming these are shared, or only needed for visual globe)
 interface VesselData {
   lat: number;
   lng: number;
@@ -30,58 +29,18 @@ interface ClusterData {
   closest: number;
 }
 
-const HomePage: React.FC = () => {
+const LandingPage: React.FC = () => {
+  const router = useRouter(); // Initialize useRouter
   const globeEl = useRef<any>(null);
   const [landData, setLandData] = useState<{ features: any[] }>({ features: [] });
-  const [vesselData, setVesselData] = useState<VesselData[]>([]);
-  const [clusteredData, setClusteredData] = useState<ClusterData[]>(([]));
-  const [hoveredVessel, setHoveredVessel] = useState<VesselData | null>(null);
-  const [popupPosition, setPopupPosition] = useState<{ x: number; y: number } | null>(null);
-  const [vesselImageUrl, setVesselImageUrl] = useState<string | null>(null);
-  const [imageLoading, setImageLoading] = useState(false);
+  const [isDataLoaded, setIsDataLoaded] = useState(false);
+  const [isFirstLoad, setIsFirstLoad] = useState(true);
 
-  // Agent toast & panel state
-  const [showAgentToast, setShowAgentToast] = useState(false);
-  const [agentPoint, setAgentPoint] = useState<AgentPoint | null>(null);
-  const [isAgentPanelOpen, setIsAgentPanelOpen] = useState(false);
-
-
-  // Auth state
-  const { user, hasAnyRole } = useAuth();
-
-
-
-  // Function to fetch vessel image
-  const fetchVesselImage = async () => {
-    setImageLoading(true);
-    setVesselImageUrl(null);
-    
-    try {
-      // Add cache-busting parameter to ensure we get a new random image each time
-      const timestamp = Date.now();
-      const response = await fetch(`http://127.0.0.1:8000/api/images/vessel-image?t=${timestamp}`, {
-        method: 'GET',
-        cache: 'no-cache', // Explicitly disable caching
-        headers: {
-          'Cache-Control': 'no-cache',
-          'Pragma': 'no-cache'
-        }
-      });
-      
-      if (response.ok) {
-        // Create object URL from the image blob
-        const blob = await response.blob();
-        const imageUrl = URL.createObjectURL(blob);
-        setVesselImageUrl(imageUrl);
-      } else {
-        console.error('Failed to fetch vessel image:', response.statusText);
-      }
-    } catch (error) {
-      console.error('Error fetching vessel image:', error);
-    } finally {
-      setImageLoading(false);
-    }
-  };
+  // Minimal data for landing page globe background
+  const [clusteredData, setClusteredData] = useState<ClusterData[]>([]);
+  const [vesselData, setVesselData] = useState<VesselData[]>([]); // To simulate data for the background globe
+  const GREEN = "#2eb700";
+  const RED = "#fc0303";
 
   const markerSvg = `<svg viewBox="-4 0 36 36">
     <path fill="currentColor" d="M14,0 C21.732,0 28,5.641 28,12.6 C28,23.963 14,36 14,36 C14,36 0,24.064 0,12.6 C0,5.641 6.268,0 14,0 Z"></path>
@@ -91,142 +50,52 @@ const HomePage: React.FC = () => {
   const clusterSvg = (count: number) => `<svg viewBox="-4 0 36 36">
     <path fill="currentColor" d="M14,0 C21.732,0 28,5.641 28,12.6 C28,23.963 14,36 14,36 C14,36 0,24.064 0,12.6 C0,5.641 6.268,0 14,0 Z"></path>
     <circle fill="black" cx="14" cy="14" r="7"></circle>
-    <text x="14" y="18" text-anchor="middle" fill="white" font-size="10" font-weight="bold">${count}</text>
+    <text x="14" y="18" text-anchor="middle" fill="white" font-size="12" font-weight="bold">${count}</text>
   </svg>`;
 
-  const clusterBase = 1000;
-  const cullingBase = 8000;
+  const clusterBase = 1500;
+  const cullingBase = 7000;
 
-  const clusterMarkers = (markers: VesselData[]) => {
-    if (markers.length === 0) return [];
+  // Simplified cluster function for landing page to just show some markers
+  const clusterMarkers = useCallback((markers: VesselData[], cull = true) => {
+    if (markers.length === 0) return;
 
-    const pov = globeEl.current ? globeEl.current.pointOfView() : {lat:0, lng: 0, altitude:2.5};
-    const clusterThreshold = Math.min(10000, clusterBase * pov.altitude);
-    const cullingThreshold = Math.max(1, Math.min(80000, cullingBase * pov.altitude));
-    
+    // For landing page, we just want some visible clusters/markers
+    // No culling based on POV, just a simple representation
     const clusters: ClusterData[] = [];
-    const processed = new Set<number>();
-    
-    for (let index = 0; index < markers.length; index++) {
-      if (processed.has(index)) continue;
-      
-      const marker = markers[index];
-
-      if(!marker.registered && !hasAnyRole(['confidential', 'secret', 'top-secret'])) continue;
-
-      const R = 6371;
-      const dLat = (pov.lat - marker.lat) * Math.PI / 180;
-      const dLng = (pov.lng - marker.lng) * Math.PI / 180;
-      const a = Math.sin(dLat/2) * Math.sin(dLat/2) +
-                Math.cos(marker.lat * Math.PI / 180) * Math.cos(pov.lat * Math.PI / 180) *
-                Math.sin(dLng/2) * Math.sin(dLng/2);
-      const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
-      const distance = R * c;
-      if(distance > cullingThreshold) continue;
-
-      const cluster: ClusterData = {
-        lat: marker.lat,
-        lng: marker.lng,
-        count: 1,
-        markers: [marker],
-        registered: marker.registered,
-        closest: Infinity
-      };
-      
-      for (let otherIndex = 0; otherIndex < markers.length; otherIndex++) {
-        if (otherIndex === index || processed.has(otherIndex)) continue;
-        
-        const otherMarker = markers[otherIndex];
-
-        if(cluster.registered != otherMarker.registered) continue;
-        
-        const R = 6371;
-        const dLat = (otherMarker.lat - marker.lat) * Math.PI / 180;
-        const dLng = (otherMarker.lng - marker.lng) * Math.PI / 180;
-        const a = Math.sin(dLat/2) * Math.sin(dLat/2) +
-                  Math.cos(marker.lat * Math.PI / 180) * Math.cos(otherMarker.lat * Math.PI / 180) *
-                  Math.sin(dLng/2) * Math.sin(dLng/2);
-        const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
-        const distance = R * c;
-        
-        if (distance < clusterThreshold) {
-          cluster.count++;
-          cluster.markers.push(otherMarker);
-          processed.add(otherIndex);
-          cluster.registered = cluster.registered && otherMarker.registered
-          cluster.closest = Math.min(cluster.closest, distance);
-        }
-      }
-
-      if (cluster.markers.length > 1) {
-        let x = 0, y = 0, z = 0;
-        for (const m of cluster.markers) {
-          const latRad = m.lat * Math.PI / 180;
-          const lngRad = m.lng * Math.PI / 180;
-          x += Math.cos(latRad) * Math.cos(lngRad);
-          y += Math.cos(latRad) * Math.sin(lngRad);
-          z += Math.sin(latRad);
-        }
-        const total = cluster.markers.length;
-        x /= total;
-        y /= total;
-        z /= total;
-
-        const norm = Math.sqrt(x * x + y * y + z * z);
-        x /= norm;
-        y /= norm;
-        z /= norm;
-
-        const lat = Math.asin(z) * 180 / Math.PI;
-        const lng = Math.atan2(y, x) * 180 / Math.PI;
-        
-        var mndis = Infinity;
-
-        for (const m of cluster.markers) {
-          const R = 6371;
-          const dLat = (lat - m.lat) * Math.PI / 180;
-          const dLng = (lng - m.lng) * Math.PI / 180;
-          const a = Math.sin(dLat/2) * Math.sin(dLat/2) +
-                    Math.cos(m.lat * Math.PI / 180) * Math.cos(lat * Math.PI / 180) *
-                    Math.sin(dLng/2) * Math.sin(dLng/2);
-          const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
-          const distance = R * c;
-          if(distance < mndis){
-            mndis = distance;
-            cluster.lat = m.lat;
-            cluster.lng = m.lng;
-          }
-        }
-      }
-      
-      clusters.push(cluster);
-      processed.add(index);
-    }
-    
+    markers.slice(0, 50).forEach(marker => { // Display a subset for performance
+        clusters.push({
+            lat: marker.lat,
+            lng: marker.lng,
+            count: 1,
+            markers: [marker],
+            registered: marker.registered,
+            closest: Infinity
+        });
+    });
     setClusteredData(clusters);
-  };
+  }, []);
 
-  const handleZoom = (pov : any) => {
-    clusterMarkers(vesselData);
-    setHoveredVessel(null);
-    setPopupPosition(null);
-  }
-
-  const fetchData = async () => {
+  const fetchData = useCallback(async () => {
+    setIsDataLoaded(false);
     try {
       const response = await fetch('http://127.0.0.1:8000/api/getPositions', {
         method: 'GET',
         headers: { 'Content-Type': 'application/json' },
       });
-      const data = await response.json();
+      const data: VesselData[] = await response.json();
       if (response.ok) {
-        setVesselData(data);
-        clusterMarkers(data);
+        setVesselData(data); // Store for background globe
+        clusterMarkers(data); // Cluster them
+        setIsDataLoaded(true);
+        setIsFirstLoad(false);
       }
     } catch (error) {
       console.log('Error fetching vessel data:', error);
+      setIsDataLoaded(true);
+      setIsFirstLoad(false);
     }
-  }
+  }, [clusterMarkers]);
 
   useEffect(() => {
     fetch('https://cdn.jsdelivr.net/npm/world-atlas/land-110m.json')
@@ -237,389 +106,186 @@ const HomePage: React.FC = () => {
       });
 
     fetchData();
-  }, []);
-
-  useEffect(() => {
-    const handleVisibilityChange = () => {
-      if (!document.hidden) {
-        fetchData();
-      }
-    };
-
-    const handleFocus = () => {
-      fetchData();
-    };
-
-    document.addEventListener('visibilitychange', handleVisibilityChange);
-    window.addEventListener('focus', handleFocus);
-
-    return () => {
-      document.removeEventListener('visibilitychange', handleVisibilityChange);
-      window.removeEventListener('focus', handleFocus);
-      // Clean up image URL on unmount
-      if (vesselImageUrl) {
-        URL.revokeObjectURL(vesselImageUrl);
-      }
-    };
-  }, []);
+  }, [fetchData]);
+  const handleEnterDashboard = () => {
+    router.push('/dashboard'); // Navigate to the dashboard page
+  };
 
   return (
     <div style={{ width: '100%', height: '100vh', position: 'relative', overflow: 'hidden' }}>
-      {/* Filter Menu */}
-      <div style={{
-        position: 'absolute',
-        top: '20px',
-        left: '20px',
-        zIndex: 1000,
-        display: 'flex',
-        flexDirection: 'column',
-        gap: '10px',
-        backgroundColor: 'rgba(0, 0, 0, 0.8)',
-        padding: '15px',
-        borderRadius: '10px',
-        border: '1px solid rgba(255, 255, 255, 0.2)',
-        backdropFilter: 'blur(10px)',
-        minWidth: '200px'
-      }}>
-        <div style={{ color: 'white', fontSize: '14px', fontWeight: 'bold', marginBottom: '5px' }}>
-          Filters
+      {!isDataLoaded && isFirstLoad ? (
+        <div style={{
+          position: 'absolute',
+          inset: 0,
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          backgroundColor: '#000',
+          color: 'white',
+          fontSize: '18px',
+          fontFamily: 'Arial, sans-serif'
+        }}>
+          <div style={{ textAlign: 'center' }}>
+            <div style={{ 
+              width: '40px', 
+              height: '40px', 
+              border: '3px solid #333', 
+              borderTop: '3px solid #fff', 
+              borderRadius: '50%', 
+              animation: 'spin 1s linear infinite',
+              margin: '0 auto 20px'
+            }}></div>
+            Loading vessel data...
+          </div>
         </div>
-        
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-          <label style={{ color: 'white', fontSize: '12px' }}>
-            Zone Filter
-            <select style={{
-              width: '100%',
-              marginTop: '4px',
-              padding: '4px 8px',
-              backgroundColor: 'rgba(255, 255, 255, 0.1)',
-              color: 'white',
-              border: '1px solid rgba(255, 255, 255, 0.3)',
-              borderRadius: '4px',
-              fontSize: '11px'
-            }}>
-              <option>All Zones</option>
-              <option>EEZ</option>
-              <option>MPA</option>
-              <option>Restricted</option>
-            </select>
-          </label>
-          
-          <label style={{ color: 'white', fontSize: '12px' }}>
-            Time Range
-            <select style={{
-              width: '100%',
-              marginTop: '4px',
-              padding: '4px 8px',
-              backgroundColor: 'rgba(255, 255, 255, 0.1)',
-              color: 'white',
-              border: '1px solid rgba(255, 255, 255, 0.3)',
-              borderRadius: '4px',
-              fontSize: '11px'
-            }}>
-              <option>Last 24h</option>
-              <option>Last 7 days</option>
-              <option>Last 30 days</option>
-              <option>Custom</option>
-            </select>
-          </label>
-          
-          <label style={{ color: 'white', fontSize: '12px' }}>
-            Min Risk Score
-            <input
-              type="range"
-              min="0"
-              max="1"
-              step="0.1"
-              defaultValue="0.3"
-              style={{
-                width: '100%',
-                marginTop: '4px'
+      ) : (
+        <div style={{
+          position: 'absolute',
+          inset: 0,
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          backgroundColor: '#000',
+          color: 'white',
+          fontFamily: 'Arial, sans-serif',
+          overflow: 'hidden'
+        }}>
+          {/* Globe positioned off-screen to the right */}
+          <div style={{
+            position: 'absolute',
+            right: '-50%',
+            top: '50%',
+            transform: 'translateY(-50%)',
+            width: '100%',
+            height: '100%',
+          }}>
+            <Globe
+              ref={globeEl}
+              globeImageUrl={null}
+              bumpImageUrl={null}
+              backgroundImageUrl={null}
+              showGlobe={false}
+              showAtmosphere={false}
+              backgroundColor={'rgba(0,0,0,0)'}
+              polygonsData={landData.features}
+              polygonCapColor={() => 'rgba(130, 130, 130, 0.5)'}
+              polygonSideColor={() => 'rgba(0,0,0,0)'}
+              polygonAltitude={0}
+              polygonStrokeColor={() => 'rgba(255, 255, 255, 1)'}
+              showGraticules={true}
+              htmlElementsData={clusteredData}
+              htmlElement={(d: any) => {
+                const el = document.createElement('div');
+                if (d.count > 1) {
+                  el.innerHTML = clusterSvg(d.count);
+                } else {
+                  el.innerHTML = markerSvg;
+                }
+                el.style.color = d.registered ? GREEN : RED;
+                el.style.width = `${40 + d.count / 200}px`;
+                el.style.height = 'auto';
+                el.style.pointerEvents = 'none'; // Disable interaction for background
+                return el;
+              }}
+              htmlElementVisibilityModifier={(el: any, isVisible: Boolean) => {
+                if (isVisible) {
+                  el.style.opacity = '1';
+                } else {
+                  el.style.opacity = '0';
+                }
+              }}
+              onGlobeReady={() => { 
+                if (globeEl.current) {
+                  globeEl.current.pointOfView({ lat: 25, lng: 0, altitude: 0.6 });
+                  globeEl.current.controls().autoRotate = true;
+                  globeEl.current.controls().autoRotateSpeed = 1;
+                }
               }}
             />
-            <div style={{ fontSize: '10px', color: 'rgba(255, 255, 255, 0.7)', textAlign: 'center' }}>
-              0.3
-            </div>
-          </label>
-          
-          <label style={{ color: 'white', fontSize: '12px', display: 'flex', alignItems: 'center', gap: '8px' }}>
-            <input
-              type="checkbox"
-              defaultChecked
-              style={{ margin: 0 }}
-            />
-            Show Legend
-          </label>
-        </div>
-      </div>
-
-      <div style={{
-        position: 'absolute',
-        inset: 0,
-        transition: 'transform 280ms ease',
-        transform: isAgentPanelOpen ? 'translateX(-80px) scale(0.9)' : 'none',
-        transformOrigin: 'center'
-      }}>
-      <Globe
-        ref={globeEl}
-        globeImageUrl={null}
-        bumpImageUrl={null}
-        backgroundImageUrl={null}
-        showGlobe={false}
-        showAtmosphere={false}
-        backgroundColor={'rgba(0,0,0,0)'}
-
-        polygonsData={landData.features}
-        polygonCapColor={() => 'rgba(130, 130, 130, 0.5)'}
-        polygonSideColor={() => 'rgba(0,0,0,0)'}
-        polygonAltitude={0}
-        polygonStrokeColor={() => 'rgba(255, 255, 255, 1)'}
-
-        showGraticules={true}
-
-        htmlElementsData={clusteredData}
-        htmlElement={(d: any) => {
-          const el = document.createElement('div');
-          if (d.count > 1) {
-            el.innerHTML = clusterSvg(d.count);
-          } else {
-            el.innerHTML = markerSvg;
-          }
-          
-          el.style.color = d.registered ? "#41fc03" : "#fc0303";
-          el.style.width = d.count > 1 ? `40px` : `30px`;
-          el.style.height = 'auto';
-          el.style.cursor = 'pointer';
-          el.style.pointerEvents = 'auto';
-          
-          el.addEventListener('click', (e) => {
-            e.preventDefault();
-            e.stopPropagation();
-            
-            if (d.count == 1) {
-              setHoveredVessel(d.markers[0]);
-              
-              // Fetch random vessel image
-              fetchVesselImage();
-              
-              if (!d.markers[0].registered && hasAnyRole(['confidential', 'secret', 'top-secret'])) {
-                const now = new Date();
-                const ap: AgentPoint = {
-                  id: d.markers[0].id,
-                  lat: d.markers[0].lat,
-                  lng: d.markers[0].lng,
-                  timestamp: d.markers[0].timestamp,
-                  mmsi: d.markers[0].mmsi,
-                  imo: d.markers[0].imo,
-                  flag: d.markers[0].flag,
-                  shipName: d.markers[0].shipName,
-                  geartype: d.markers[0].geartype
-                };
-                setAgentPoint(ap);
-                setShowAgentToast(true);
-              }
-              const popupHeight = 300;
-              const popupWidth = 320;
-              const screenHeight = window.innerHeight;
-              const screenWidth = window.innerWidth;
-              
-              let x = e.clientX + 15;
-              let y = e.clientY - 10;
-              
-              if (x + popupWidth > screenWidth) {
-                x = e.clientX - popupWidth - 15;
-              }
-              
-              if (e.clientY > screenHeight / 2) {
-                y = e.clientY - popupHeight - 10;
-              } else {
-                y = e.clientY - 10;
-              }
-              
-              y = Math.max(10, Math.min(y, screenHeight - popupHeight - 10));
-              x = Math.max(10, Math.min(x, screenWidth - popupWidth - 10));
-              
-              setPopupPosition({ x, y });
-            } else {
-              if (globeEl.current) {
-                const currentPov = globeEl.current.pointOfView();
-                const targetPov = {
-                  lat: d.lat,
-                  lng: d.lng,
-                  altitude: Math.max(Math.min(10000, d.closest) / clusterBase * 0.5, currentPov.altitude * 0.2)
-                };
-
-                const duration = 1200;
-                const start = performance.now();
-
-                function animateZoom(now: number) {
-                  const t = Math.min((now - start) / duration, 1);
-                  const ease = t < 0.5 ? 2 * t * t : -1 + (4 - 2 * t) * t;
-                  const pov = {
-                    lat: currentPov.lat + (targetPov.lat - currentPov.lat) * ease,
-                    lng: currentPov.lng + (targetPov.lng - currentPov.lng) * ease,
-                    altitude: currentPov.altitude + (targetPov.altitude - currentPov.altitude) * ease
-                  };
-                  globeEl.current.pointOfView(pov);
-                  if (t < 1) {
-                    requestAnimationFrame(animateZoom);
-                  }
-                }
-                requestAnimationFrame(animateZoom);
-              }
-            }
-          });
-          
-          return el;
-        }}
-        htmlElementVisibilityModifier={(el : any, isVisible : Boolean) => {
-          if(isVisible){
-            el.style.opacity = '1';
-            el.style['pointer-events'] = 'auto';
-          } else {
-            el.style.opacity = '0';
-            el.style['pointer-events'] = 'none';
-          }
-        }}
-      
-        onGlobeReady={()=>{clusterMarkers(vesselData)}}
-        onZoom={(pov) => {handleZoom(pov)}}
-      />
-      
-      </div>
-      
-      {/* Vessel information popup */}
-      {hoveredVessel && popupPosition && (
-        <div
-          data-popup="vessel-info"
-          style={{
-            position: 'fixed',
-            left: popupPosition.x + 15,
-            top: popupPosition.y - 10,
-            backgroundColor: 'rgba(0, 0, 0, 0.95)',
-            color: 'white',
-            padding: '20px',
-            borderRadius: '12px',
-            fontSize: '14px',
-            fontFamily: 'Arial, sans-serif',
-            zIndex: 1000,
-            boxShadow: '0 8px 32px rgba(0, 0, 0, 0.4)',
-            border: '1px solid rgba(255, 255, 255, 0.2)',
-            maxWidth: '320px',
-            minWidth: '280px',
-            backdropFilter: 'blur(10px)'
-          }}
-        >
-
-          <div style={{ fontWeight: 'bold', marginBottom: '12px', color: hoveredVessel.registered ? '#51cf66' : '#ff6b6b', fontSize: '16px' }}>
-            {hoveredVessel.registered ? hoveredVessel.shipName  : 'Unregistered Vessel'}
           </div>
 
-          <div
-            style={{
-              width: '100%',
-              height: '120px',
-              backgroundColor: 'rgba(255, 255, 255, 0.1)',
-              borderRadius: '8px',
-              marginBottom: '16px',
+          {/* Landing page content */}
+          <div style={{
+            position: 'relative',
+            zIndex: 10,
+            textAlign: 'left',
+            maxWidth: '600px',
+            padding: '0 60px',
+            marginLeft: '-400px'
+          }}>
+            {/* Logo and Title */}
+            <div style={{
               display: 'flex',
               alignItems: 'center',
-              justifyContent: 'center',
-              border: '2px dashed rgba(255, 255, 255, 0.3)',
-              color: 'rgba(255, 255, 255, 0.6)',
-              fontSize: '12px',
-              overflow: 'hidden',
-              position: 'relative'
-            }}
-          >
-            {imageLoading ? (
-              <div style={{ textAlign: 'center' }}>
-                <div style={{ marginBottom: '8px' }}>⏳</div>
-                <div>Loading image...</div>
-              </div>
-            ) : vesselImageUrl ? (
-              <img
-                src={vesselImageUrl}
-                alt="Vessel SAR Image"
-                style={{
-                  width: '100%',
-                  height: '100%',
-                  objectFit: 'cover',
-                  borderRadius: '6px'
-                }}
-                onError={(e) => {
-                  console.error('Failed to load vessel image');
-                  e.currentTarget.style.display = 'none';
-                }}
+              marginBottom: '20px'
+            }}>
+              <img 
+                src="/OverSEAlogo.png" 
+                alt="OverSea" 
+                style={{ 
+                  width: '60px', 
+                  height: '60px', 
+                  marginRight: '20px',
+                  borderRadius: '8px'
+                }} 
               />
-            ) : (
-              <div style={{ textAlign: 'center' }}>
-                <div style={{ marginBottom: '8px' }}>📷</div>
-                <div>Vessel Image Placeholder</div>
-              </div>
-            )}
-          </div>
-          
-          <div style={{ marginBottom: '10px' }}>
-            <strong>Location:</strong> {hoveredVessel.lat.toFixed(4)}°, {hoveredVessel.lng.toFixed(4)}°
-          </div>
+              <h1 style={{
+                fontSize: '4rem',
+                fontWeight: 'bold',
+                margin: 0,
+                color: '#ffffff',
+                letterSpacing: '0.1em'
+              }}>
+                OverSea
+              </h1>
+            </div>
 
-          <div style={{ marginBottom: '10px' }}>
-            <strong>Timestamp:</strong> {hoveredVessel.timestamp}
-          </div>
+            {/* Subtitle */}
+            <h2 style={{
+              fontSize: '1.5rem',
+              fontWeight: '300',
+              margin: '0 0 40px 0',
+              color: '#ccc',
+              lineHeight: '1.4'
+            }}>
+              Advanced Maritime Intelligence & Surveillance Platform
+            </h2>
 
-          <div style={{ marginBottom: '10px' }}>
-            <strong>Geartype:</strong> {hoveredVessel.geartype}
+            {/* Enter Button */}
+            <button
+              onClick={handleEnterDashboard} // Changed to navigate
+              style={{
+                padding: '15px 40px',
+                fontSize: '1.2rem',
+                fontWeight: '600',
+                backgroundColor: '#2eb700',
+                color: 'white',
+                border: 'none',
+                borderRadius: '8px',
+                cursor: 'pointer',
+                transition: 'all 0.3s ease',
+                boxShadow: '0 4px 20px rgba(46, 183, 0, 0.3)',
+                textTransform: 'uppercase',
+                letterSpacing: '0.05em'
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.backgroundColor = '#51cf66';
+                e.currentTarget.style.transform = 'translateY(-2px)';
+                e.currentTarget.style.boxShadow = '0 6px 25px rgba(46, 183, 0, 0.4)';
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.backgroundColor = '#2eb700';
+                e.currentTarget.style.transform = 'translateY(0)';
+                e.currentTarget.style.boxShadow = '0 4px 20px rgba(46, 183, 0, 0.3)';
+              }}
+            >
+              Enter Dashboard
+            </button>
           </div>
-          
-          {/* Agent Chat trigger removed */}
-
-          <button
-            onClick={() => {
-              setHoveredVessel(null);
-              setPopupPosition(null);
-              // Clean up image URL
-              if (vesselImageUrl) {
-                URL.revokeObjectURL(vesselImageUrl);
-                setVesselImageUrl(null);
-              }
-            }}
-            style={{
-              width: '100%',
-              padding: '10px 16px',
-              backgroundColor: 'rgba(255, 255, 255, 0.1)',
-              color: 'white',
-              border: '1px solid rgba(255, 255, 255, 0.3)',
-              borderRadius: '6px',
-              cursor: 'pointer',
-              fontSize: '13px',
-              fontWeight: '500',
-              transition: 'all 0.2s ease'
-            }}
-            onMouseEnter={(e) => {
-              e.currentTarget.style.backgroundColor = 'rgba(255, 255, 255, 0.2)';
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.backgroundColor = 'rgba(255, 255, 255, 0.1)';
-            }}
-          >
-            Close
-          </button>
         </div>
-      )}
-
-      {/* Agent Panel and Toast */}
-      <AgentPanel open={isAgentPanelOpen} point={agentPoint} onClose={() => setIsAgentPanelOpen(false)} />
-      {showAgentToast && agentPoint && hasAnyRole(['confidential', 'secret', 'top-secret']) && (
-        <AgentToast
-          title="Unregistered Vessel Detected"
-          subtitle={`${agentPoint.lat.toFixed(4)}°, ${agentPoint.lng.toFixed(4)}°, ${agentPoint.timestamp}`}
-          onOpen={() => { setIsAgentPanelOpen(true); setShowAgentToast(false); }}
-          onDismiss={() => setShowAgentToast(false)}
-        />
       )}
     </div>
   );
 };
 
-export default HomePage;
+export default LandingPage;
