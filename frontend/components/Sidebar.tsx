@@ -25,7 +25,7 @@ const Sidebar = () => {
   const [isHovered, setIsHovered] = useState(false);
 
   const navItems: NavItem[] = [
-    { href: '/', label: 'Dashboard', icon: FiHome },
+    { href: '/dashboard', label: 'Dashboard', icon: FiHome },
     { href: '/analyze', label: 'Intelligence Console', icon: FiBarChart },
     { href: '/reports', label: 'Reports', icon: FiFileText },
     { href: '/profile', label: 'Profile', icon: FiUser },
