@@ -9,3 +9,14 @@ exa-py
 python-multipart
 apscheduler
 aiohttp
+numpy
+pandas
+geopandas
+scipy
+scikit-learn
+matplotlib
+seaborn
+shapely
+rasterio
+requests
+asyncio
