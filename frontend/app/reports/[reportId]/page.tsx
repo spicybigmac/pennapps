@@ -104,7 +104,7 @@ const ReportDisplayPage = ({ params }: { params: Promise<{ reportId:string }> })
               Export PDF
             </button>
           </div>
-          <div id="report-content" className="bg-black border border-gray-800 rounded-lg p-8 space-y-10 max-h-[70vh] overflow-y-auto overflow-x-hidden">
+          <div id="report-content" className="bg-black border border-gray-800 rounded-lg p-8 space-y-10">
             {/* Executive Summary */}
             {Array.isArray(generatedJson.executiveSummary) && (
               <section>
@@ -291,7 +291,7 @@ const ReportDisplayPage = ({ params }: { params: Promise<{ reportId:string }> })
             Export PDF
           </button>
         </div>
-        <div id="report-content" className="bg-black border border-gray-800 rounded-lg p-8 space-y-12 max-h-[70vh] overflow-y-auto overflow-x-hidden">
+        <div id="report-content" className="bg-black border border-gray-800 rounded-lg p-8 space-y-12">
           <section>
             <h2 className="text-xl font-semibold mb-4 border-b border-gray-800 pb-3">
               Weekly IUU Activity Analysis

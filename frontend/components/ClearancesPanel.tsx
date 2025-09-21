@@ -84,36 +84,36 @@ export default function ClearancesPanel() {
   const roleOptions = ['public-trust', 'confidential', 'secret', 'top-secret'];
 
   return (
-    <div className="bg-gray-900 rounded-lg p-6">
+    <div className="bg-black border border-white rounded-lg p-6">
       <div className="flex items-center justify-between mb-6">
         <h2 className="text-xl font-semibold text-white">User Management</h2>
         <button
           onClick={fetchUsers}
           disabled={loading}
-          className="px-4 py-2 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-600 text-white rounded transition-colors"
+          className="px-4 py-2 bg-white hover:bg-gray-300 disabled:opacity-60 text-black rounded transition-colors"
         >
           {loading ? 'Loading...' : 'Refresh'}
         </button>
       </div>
 
       {error && (
-        <div className="text-red-400 mb-4 p-3 bg-red-900/20 rounded">
+        <div className="text-white mb-4 p-3 border border-white rounded">
           <strong>Error:</strong> {error}
         </div>
       )}
 
       {successMessage && (
-        <div className="text-green-400 mb-4 p-3 bg-green-900/20 rounded">
+        <div className="text-black mb-4 p-3 bg-white rounded">
           <strong>Success:</strong> {successMessage}
         </div>
       )}
 
       {users.length === 0 && !loading ? (
-        <div className="text-gray-400 text-center py-8">No users found</div>
+        <div className="text-white text-center py-8">No users found</div>
       ) : (
-        <div className="space-y-4 max-h-96 overflow-y-auto">
+        <div className="space-y-4">
           {users.map((user) => (
-            <div key={user.user_id} className="bg-gray-800 rounded-lg p-4">
+            <div key={user.user_id} className="bg-black border border-white/20 rounded-lg p-4">
               <div className="flex items-center justify-between mb-3">
                 <div className="flex items-center space-x-3">
                   {user.picture && (
@@ -127,16 +127,16 @@ export default function ClearancesPanel() {
                     <div className="text-white font-medium">
                       {user.name || 'Unknown'}
                     </div>
-                    <div className="text-gray-400 text-sm">
+                    <div className="text-white text-sm">
                       {user.email}
                     </div>
                     {user.user_metadata?.department && (
-                      <div className="text-gray-500 text-xs">
+                      <div className="text-white text-xs">
                         {user.user_metadata.department}
                       </div>
                     )}
                     {user.last_login && (
-                      <div className="text-gray-500 text-xs">
+                      <div className="text_white text-xs">
                         Last login: {new Date(user.last_login).toLocaleDateString()}
                       </div>
                     )}
@@ -150,18 +150,13 @@ export default function ClearancesPanel() {
                     user.roles.map((role, index) => (
                       <span
                         key={index}
-                        className={`px-2 py-1 text-xs rounded ${
-                          role === 'top-secret' ? 'bg-red-600' :
-                          role === 'secret' ? 'bg-orange-600' :
-                          role === 'confidential' ? 'bg-yellow-600' :
-                          'bg-green-600'
-                        } text-white`}
+                        className={`px-2 py-1 text-xs rounded border border-white text-white`}
                       >
                         {role}
                       </span>
                     ))
                   ) : (
-                    <span className="text-gray-400 text-xs">No roles</span>
+                    <span className="text-white text-xs">No roles</span>
                   )}
                 </div>
                 
@@ -173,7 +168,7 @@ export default function ClearancesPanel() {
                     }
                   }}
                   disabled={updating === user.user_id}
-                  className="text-sm bg-gray-700 text-white rounded px-2 py-1 border-0 focus:ring-1 focus:ring-blue-500"
+                  className="text-sm bg-black border border_white text-white rounded px-2 py-1 focus:outline-none"
                 >
                   <option value="">Add Role</option>
                   {roleOptions.map((role) => (
@@ -185,13 +180,13 @@ export default function ClearancesPanel() {
               </div>
               
               {updating === user.user_id && (
-                <div className="text-xs text-gray-400 mt-2">Updating...</div>
+                <div className="text-xs text-white mt-2">Updating...</div>
               )}
               
               {/* Debug info */}
               <details className="mt-3">
-                <summary className="text-xs text-gray-500 cursor-pointer">Debug Info</summary>
-                <div className="text-xs text-gray-400 mt-2 space-y-1">
+                <summary className="text-xs text-white cursor-pointer">Debug Info</summary>
+                <div className="text-xs text-white mt-2 space-y-1">
                   <div><strong>User Metadata:</strong> {JSON.stringify(user.user_metadata || {})}</div>
                   <div><strong>App Metadata:</strong> {JSON.stringify(user.app_metadata || {})}</div>
                 </div>

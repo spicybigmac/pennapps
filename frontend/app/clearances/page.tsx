@@ -10,7 +10,7 @@ export default function Clearances() {
   if (isLoading) {
     return (
       <div className="p-8">
-        <div className="text-gray-400">Loading...</div>
+        <div className="text-white">Loading...</div>
       </div>
     );
   }
@@ -18,7 +18,7 @@ export default function Clearances() {
   if (error) {
     return (
       <div className="p-8">
-        <div className="text-red-400">Error: {error.message}</div>
+        <div className="text-white">Error: {error.message}</div>
       </div>
     );
   }
@@ -26,12 +26,12 @@ export default function Clearances() {
   if (!user) {
     return (
       <div className="p-8">
-        <div className="max-w-md mx-auto bg-gray-900 rounded-lg p-6">
+        <div className="max-w-md mx-auto bg-black border border-white rounded-lg p-6">
           <h1 className="text-2xl font-bold text-white mb-4">Access Denied</h1>
-          <p className="text-gray-400 mb-4">You need to be logged in to view clearances.</p>
+          <p className="text-white mb-4">You need to be logged in to view clearances.</p>
           <Link 
             href="/auth/login" 
-            className="inline-block px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded transition-colors"
+            className="inline-block px-4 py-2 bg-white hover:bg-gray-300 text-black rounded transition-colors"
           >
             Login
           </Link>
@@ -43,19 +43,19 @@ export default function Clearances() {
   if (!hasRole('top-secret')) {
     return (
       <div className="p-8">
-        <div className="max-w-md mx-auto bg-gray-900 rounded-lg p-6">
+        <div className="max-w-md mx-auto bg-black border border-white rounded-lg p-6">
           <h1 className="text-2xl font-bold text-white mb-4">Access Denied</h1>
-          <p className="text-gray-400 mb-4">You need top-secret clearance to view this page.</p>
+          <p className="text-white mb-4">You need top-secret clearance to view this page.</p>
           <div className="flex space-x-4">
             <Link 
               href="/profile" 
-              className="inline-block px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded transition-colors"
+              className="inline-block px-4 py-2 bg-white hover:bg-gray-300 text-black rounded transition-colors"
             >
               View Profile
             </Link>
             <Link 
               href="/" 
-              className="inline-block px-4 py-2 bg-gray-600 hover:bg-gray-700 text-white rounded transition-colors"
+              className="inline-block px-4 py-2 bg-white hover:bg-gray-300 text-black rounded transition-colors"
             >
               Go Home
             </Link>
@@ -70,7 +70,7 @@ export default function Clearances() {
       <div className="max-w-6xl mx-auto">
         <div className="mb-8">
           <h1 className="text-3xl font-bold text-white mb-2">Security Clearances</h1>
-          <p className="text-gray-400">Manage user access levels and security clearances</p>
+          <p className="text-white">Manage user access levels and security clearances</p>
         </div>
         
         <ClearancesPanel />
