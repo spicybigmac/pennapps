@@ -1,0 +1,16 @@
+{
+  "timestamp": "2025-09-21T10:06:55.207068",
+  "total_hotspots": 5,
+  "risk_distribution": {
+    "CRITICAL": 0,
+    "HIGH": 0,
+    "MEDIUM": 0,
+    "LOW": 5
+  },
+  "data_summary": {
+    "total_vessels": 75,
+    "tracked_vessels": 17,
+    "untracked_vessels": 58,
+    "untracked_ratio": 0.7733333333333333
+  }
+}

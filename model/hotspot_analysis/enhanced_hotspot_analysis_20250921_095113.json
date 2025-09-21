@@ -1,0 +1,493 @@
+{
+  "analysis_timestamp": "2025-09-21T09:51:13.094482",
+  "time_range": {
+    "start": "2025-09-20T09:51:11.705448",
+    "end": "2025-09-21T09:51:11.705448"
+  },
+  "data_summary": {
+    "total_vessels": 74,
+    "tracked_vessels": 17,
+    "untracked_vessels": 57,
+    "untracked_ratio": 0.7702702702702703
+  },
+  "auxiliary_data": {
+    "ports_loaded": 3805,
+    "fishing_seasons_loaded": 2
+  },
+  "hotspots": [
+    {
+      "id": "enhanced_hotspot_1",
+      "lat": 37.7814221576783,
+      "lon": -122.41067974324304,
+      "risk_score": 0.016,
+      "risk_level": "LOW",
+      "vessel_count": 16,
+      "untracked_ratio": 0.842,
+      "size": 0.010630597703180755,
+      "color": "#00ff00",
+      "bounds": {
+        "min_lat": 37.63813093977008,
+        "max_lat": 37.90465402617202,
+        "min_lon": -122.6006753252086,
+        "max_lon": -122.22272121579562
+      },
+      "nearby_tracked_count": 1,
+      "nearby_ports": [
+        {
+          "name": "San Francisco",
+          "country": "United States",
+          "lat": 37.816667,
+          "lon": -122.416667,
+          "harbor_type": "Coastal (Natural)",
+          "harbor_size": "Large",
+          "facilities": {
+            "oil_terminal": true,
+            "container": false,
+            "fishing": false
+          },
+          "distance_km": 3.95
+        },
+        {
+          "name": "Yerbabuena Island",
+          "country": "United States",
+          "lat": 37.816667,
+          "lon": -122.366667,
+          "harbor_type": "Coastal (Natural)",
+          "harbor_size": "Very Small",
+          "facilities": {
+            "oil_terminal": true,
+            "container": false,
+            "fishing": false
+          },
+          "distance_km": 5.51
+        },
+        {
+          "name": "Oakland",
+          "country": "United States",
+          "lat": 37.816667,
+          "lon": -122.333333,
+          "harbor_type": "Coastal (Natural)",
+          "harbor_size": "Large",
+          "facilities": {
+            "oil_terminal": true,
+            "container": false,
+            "fishing": false
+          },
+          "distance_km": 7.84
+        },
+        {
+          "name": "Sausalito",
+          "country": "United States",
+          "lat": 37.85,
+          "lon": -122.483333,
+          "harbor_type": "Coastal (Natural)",
+          "harbor_size": "Very Small",
+          "facilities": {
+            "oil_terminal": true,
+            "container": false,
+            "fishing": false
+          },
+          "distance_km": 9.94
+        },
+        {
+          "name": "Alameda",
+          "country": "United States",
+          "lat": 37.783333,
+          "lon": -122.266667,
+          "harbor_type": "Coastal (Natural)",
+          "harbor_size": "Small",
+          "facilities": {
+            "oil_terminal": true,
+            "container": false,
+            "fishing": false
+          },
+          "distance_km": 12.66
+        }
+      ],
+      "fishing_season_factor": 0.9,
+      "enhanced_factors": {
+        "port_proximity": 5,
+        "fishing_season": 0.9,
+        "isolation": 0.9,
+        "density": 0.016310926373481634
+      },
+      "created_at": "2025-09-21T09:51:13.072134"
+    },
+    {
+      "id": "enhanced_hotspot_2",
+      "lat": 40.73209682214527,
+      "lon": -74.02502002165592,
+      "risk_score": 0.013,
+      "risk_level": "LOW",
+      "vessel_count": 9,
+      "untracked_ratio": 1.0,
+      "size": 0.010534175361023834,
+      "color": "#00ff00",
+      "bounds": {
+        "min_lat": 40.57966000931994,
+        "max_lat": 40.883622469904815,
+        "min_lon": -74.17418583692579,
+        "max_lon": -73.80574157903746
+      },
+      "nearby_tracked_count": 0,
+      "nearby_ports": [
+        {
+          "name": "Jersey City",
+          "country": "United States",
+          "lat": 40.716667,
+          "lon": -74.033333,
+          "harbor_type": "River (Natural)",
+          "harbor_size": "Medium",
+          "facilities": {
+            "oil_terminal": true,
+            "container": false,
+            "fishing": false
+          },
+          "distance_km": 1.85
+        },
+        {
+          "name": "Hoboken",
+          "country": "United States",
+          "lat": 40.75,
+          "lon": -74.016667,
+          "harbor_type": "River (Natural)",
+          "harbor_size": "Medium",
+          "facilities": {
+            "oil_terminal": true,
+            "container": false,
+            "fishing": false
+          },
+          "distance_km": 2.11
+        },
+        {
+          "name": "New York City",
+          "country": "United States",
+          "lat": 40.7,
+          "lon": -74.016667,
+          "harbor_type": "River (Natural)",
+          "harbor_size": "Large",
+          "facilities": {
+            "oil_terminal": true,
+            "container": false,
+            "fishing": false
+          },
+          "distance_km": 3.64
+        },
+        {
+          "name": "Weehawken",
+          "country": "United States",
+          "lat": 40.766667,
+          "lon": -74.016667,
+          "harbor_type": "River (Natural)",
+          "harbor_size": "Small",
+          "facilities": {
+            "oil_terminal": true,
+            "container": false,
+            "fishing": false
+          },
+          "distance_km": 3.91
+        },
+        {
+          "name": "Brooklyn",
+          "country": "United States",
+          "lat": 40.666667,
+          "lon": -74.016667,
+          "harbor_type": "River (Natural)",
+          "harbor_size": "Large",
+          "facilities": {
+            "oil_terminal": true,
+            "container": false,
+            "fishing": false
+          },
+          "distance_km": 7.31
+        }
+      ],
+      "fishing_season_factor": 0.9,
+      "enhanced_factors": {
+        "port_proximity": 5,
+        "fishing_season": 0.9,
+        "isolation": 1.0,
+        "density": 0.008607321443399877
+      },
+      "created_at": "2025-09-21T09:51:13.078573"
+    },
+    {
+      "id": "enhanced_hotspot_3",
+      "lat": 51.489801800093986,
+      "lon": -0.12528028256111973,
+      "risk_score": 0.009,
+      "risk_level": "LOW",
+      "vessel_count": 10,
+      "untracked_ratio": 1.0,
+      "size": 0.010361920110704822,
+      "color": "#00ff00",
+      "bounds": {
+        "min_lat": 51.345495377460196,
+        "max_lat": 51.695472625432174,
+        "min_lon": -0.4324307563605855,
+        "max_lon": 0.27264475197805516
+      },
+      "nearby_tracked_count": 0,
+      "nearby_ports": [
+        {
+          "name": "London",
+          "country": "United Kingdom",
+          "lat": 51.5,
+          "lon": -0.0833329999999,
+          "harbor_type": "River (Basins)",
+          "harbor_size": "Large",
+          "facilities": {
+            "oil_terminal": true,
+            "container": false,
+            "fishing": false
+          },
+          "distance_km": 3.12
+        },
+        {
+          "name": "Tilbury",
+          "country": "United Kingdom",
+          "lat": 51.466667,
+          "lon": 0.333333,
+          "harbor_type": "River (Tide Gates)",
+          "harbor_size": "Small",
+          "facilities": {
+            "oil_terminal": true,
+            "container": false,
+            "fishing": false
+          },
+          "distance_km": 31.86
+        },
+        {
+          "name": "Gravesend",
+          "country": "United Kingdom",
+          "lat": 51.45,
+          "lon": 0.366667,
+          "harbor_type": "River (Natural)",
+          "harbor_size": "Small",
+          "facilities": {
+            "oil_terminal": true,
+            "container": false,
+            "fishing": false
+          },
+          "distance_km": 34.36
+        },
+        {
+          "name": "Chatham Docks",
+          "country": "United Kingdom",
+          "lat": 51.4,
+          "lon": 0.55,
+          "harbor_type": "River (Basins)",
+          "harbor_size": "Small",
+          "facilities": {
+            "oil_terminal": true,
+            "container": false,
+            "fishing": false
+          },
+          "distance_km": 47.85
+        },
+        {
+          "name": "Isle Of Grain",
+          "country": "United Kingdom",
+          "lat": 51.433333,
+          "lon": 0.7,
+          "harbor_type": "Coastal (Natural)",
+          "harbor_size": "Small",
+          "facilities": {
+            "oil_terminal": true,
+            "container": false,
+            "fishing": false
+          },
+          "distance_km": 57.52
+        }
+      ],
+      "fishing_season_factor": 0.9,
+      "enhanced_factors": {
+        "port_proximity": 5,
+        "fishing_season": 0.9,
+        "isolation": 1.0,
+        "density": 0.005282407142001746
+      },
+      "created_at": "2025-09-21T09:51:13.084322"
+    },
+    {
+      "id": "enhanced_hotspot_4",
+      "lat": -33.81561978007456,
+      "lon": 151.17696245102618,
+      "risk_score": 0.007,
+      "risk_level": "LOW",
+      "vessel_count": 10,
+      "untracked_ratio": 0.625,
+      "size": 0.010290539135791362,
+      "color": "#00ff00",
+      "bounds": {
+        "min_lat": -33.89442553961384,
+        "max_lat": -33.66715900063704,
+        "min_lon": 150.93767439534918,
+        "max_lon": 151.40363982311308
+      },
+      "nearby_tracked_count": 1,
+      "nearby_ports": [
+        {
+          "name": "Sydney",
+          "country": "Australia",
+          "lat": -33.866667,
+          "lon": 151.2,
+          "harbor_type": "Coastal (Natural)",
+          "harbor_size": "Large",
+          "facilities": {
+            "oil_terminal": true,
+            "container": true,
+            "fishing": false
+          },
+          "distance_km": 6.06
+        },
+        {
+          "name": "Botany Bay",
+          "country": "Australia",
+          "lat": -34.0,
+          "lon": 151.233333,
+          "harbor_type": "Coastal (Natural)",
+          "harbor_size": "Small",
+          "facilities": {
+            "oil_terminal": true,
+            "container": true,
+            "fishing": false
+          },
+          "distance_km": 21.15
+        },
+        {
+          "name": "Port Kembla",
+          "country": "Australia",
+          "lat": -34.483333,
+          "lon": 150.916667,
+          "harbor_type": "Coastal (Breakwater)",
+          "harbor_size": "Medium",
+          "facilities": {
+            "oil_terminal": true,
+            "container": true,
+            "fishing": false
+          },
+          "distance_km": 78.01
+        }
+      ],
+      "fishing_season_factor": 0.9,
+      "enhanced_factors": {
+        "port_proximity": 3,
+        "fishing_season": 0.9,
+        "isolation": 0.9,
+        "density": 0.009224678185960785
+      },
+      "created_at": "2025-09-21T09:51:13.089501"
+    },
+    {
+      "id": "enhanced_hotspot_5",
+      "lat": 35.588366821647675,
+      "lon": 139.69155393020247,
+      "risk_score": 0.004,
+      "risk_level": "LOW",
+      "vessel_count": 11,
+      "untracked_ratio": 0.688,
+      "size": 0.010174812339999891,
+      "color": "#00ff00",
+      "bounds": {
+        "min_lat": 35.40790449560474,
+        "max_lat": 35.76063472477824,
+        "min_lon": 139.354321599262,
+        "max_lon": 139.94237354991984
+      },
+      "nearby_tracked_count": 1,
+      "nearby_ports": [
+        {
+          "name": "Tokyo Ko",
+          "country": "Japan",
+          "lat": 35.666667,
+          "lon": 139.75,
+          "harbor_type": "Coastal (Natural)",
+          "harbor_size": "Large",
+          "facilities": {
+            "oil_terminal": true,
+            "container": false,
+            "fishing": false
+          },
+          "distance_km": 10.18
+        },
+        {
+          "name": "Kawasaki Ko",
+          "country": "Japan",
+          "lat": 35.5,
+          "lon": 139.766667,
+          "harbor_type": "Coastal (Breakwater)",
+          "harbor_size": "Large",
+          "facilities": {
+            "oil_terminal": true,
+            "container": false,
+            "fishing": false
+          },
+          "distance_km": 11.95
+        },
+        {
+          "name": "Yokohama Ko",
+          "country": "Japan",
+          "lat": 35.45,
+          "lon": 139.583333,
+          "harbor_type": "Coastal (Breakwater)",
+          "harbor_size": "Large",
+          "facilities": {
+            "oil_terminal": true,
+            "container": false,
+            "fishing": false
+          },
+          "distance_km": 18.24
+        },
+        {
+          "name": "Funabashi",
+          "country": "Japan",
+          "lat": 35.666667,
+          "lon": 139.95,
+          "harbor_type": "Coastal (Breakwater)",
+          "harbor_size": "Very Small",
+          "facilities": {
+            "oil_terminal": true,
+            "container": false,
+            "fishing": false
+          },
+          "distance_km": 24.93
+        },
+        {
+          "name": "Katsunan Ko",
+          "country": "Japan",
+          "lat": 35.666667,
+          "lon": 139.983333,
+          "harbor_type": "Coastal (Breakwater)",
+          "harbor_size": "Small",
+          "facilities": {
+            "oil_terminal": true,
+            "container": false,
+            "fishing": false
+          },
+          "distance_km": 27.77
+        }
+      ],
+      "fishing_season_factor": 0.9,
+      "enhanced_factors": {
+        "port_proximity": 5,
+        "fishing_season": 0.9,
+        "isolation": 0.9,
+        "density": 0.0052927437608736305
+      },
+      "created_at": "2025-09-21T09:51:13.094476"
+    }
+  ],
+  "statistics": {
+    "total_hotspots": 5,
+    "average_risk": 0.01,
+    "max_risk": 0.016,
+    "total_vessels": 56
+  },
+  "risk_distribution": {
+    "CRITICAL": 0,
+    "HIGH": 0,
+    "MEDIUM": 0,
+    "LOW": 5
+  }
+}

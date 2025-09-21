@@ -6,7 +6,6 @@ import * as topojson from 'topojson-client';
 import AgentToast from '../components/AgentToast';
 import AgentPanel, { type AgentPoint } from '../components/AgentPanel';
 import { useAuth } from '../hooks/useAuth';
-import ReactCountryFlag from 'react-country-flag';
 
 const Globe = dynamic(() => import('react-globe.gl'), { ssr: false });
 
@@ -38,16 +37,51 @@ const HomePage: React.FC = () => {
   const [clusteredData, setClusteredData] = useState<ClusterData[]>(([]));
   const [hoveredVessel, setHoveredVessel] = useState<VesselData | null>(null);
   const [popupPosition, setPopupPosition] = useState<{ x: number; y: number } | null>(null);
+  const [vesselImageUrl, setVesselImageUrl] = useState<string | null>(null);
+  const [imageLoading, setImageLoading] = useState(false);
 
   // Agent toast & panel state
   const [showAgentToast, setShowAgentToast] = useState(false);
   const [agentPoint, setAgentPoint] = useState<AgentPoint | null>(null);
   const [isAgentPanelOpen, setIsAgentPanelOpen] = useState(false);
 
+
   // Auth state
   const { user, hasAnyRole } = useAuth();
 
-  const getFlagEmoji = (countryCode : string)=>String.fromCodePoint(...[...countryCode.toUpperCase()].map(x=>0x1f1a5+x.charCodeAt(0)))
+
+
+  // Function to fetch vessel image
+  const fetchVesselImage = async () => {
+    setImageLoading(true);
+    setVesselImageUrl(null);
+    
+    try {
+      // Add cache-busting parameter to ensure we get a new random image each time
+      const timestamp = Date.now();
+      const response = await fetch(`http://127.0.0.1:8000/api/images/vessel-image?t=${timestamp}`, {
+        method: 'GET',
+        cache: 'no-cache', // Explicitly disable caching
+        headers: {
+          'Cache-Control': 'no-cache',
+          'Pragma': 'no-cache'
+        }
+      });
+      
+      if (response.ok) {
+        // Create object URL from the image blob
+        const blob = await response.blob();
+        const imageUrl = URL.createObjectURL(blob);
+        setVesselImageUrl(imageUrl);
+      } else {
+        console.error('Failed to fetch vessel image:', response.statusText);
+      }
+    } catch (error) {
+      console.error('Error fetching vessel image:', error);
+    } finally {
+      setImageLoading(false);
+    }
+  };
 
   const markerSvg = `<svg viewBox="-4 0 36 36">
     <path fill="currentColor" d="M14,0 C21.732,0 28,5.641 28,12.6 C28,23.963 14,36 14,36 C14,36 0,24.064 0,12.6 C0,5.641 6.268,0 14,0 Z"></path>
@@ -222,11 +256,103 @@ const HomePage: React.FC = () => {
     return () => {
       document.removeEventListener('visibilitychange', handleVisibilityChange);
       window.removeEventListener('focus', handleFocus);
+      // Clean up image URL on unmount
+      if (vesselImageUrl) {
+        URL.revokeObjectURL(vesselImageUrl);
+      }
     };
   }, []);
 
   return (
     <div style={{ width: '100%', height: '100vh', position: 'relative', overflow: 'hidden' }}>
+      {/* Filter Menu */}
+      <div style={{
+        position: 'absolute',
+        top: '20px',
+        left: '20px',
+        zIndex: 1000,
+        display: 'flex',
+        flexDirection: 'column',
+        gap: '10px',
+        backgroundColor: 'rgba(0, 0, 0, 0.8)',
+        padding: '15px',
+        borderRadius: '10px',
+        border: '1px solid rgba(255, 255, 255, 0.2)',
+        backdropFilter: 'blur(10px)',
+        minWidth: '200px'
+      }}>
+        <div style={{ color: 'white', fontSize: '14px', fontWeight: 'bold', marginBottom: '5px' }}>
+          Filters
+        </div>
+        
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+          <label style={{ color: 'white', fontSize: '12px' }}>
+            Zone Filter
+            <select style={{
+              width: '100%',
+              marginTop: '4px',
+              padding: '4px 8px',
+              backgroundColor: 'rgba(255, 255, 255, 0.1)',
+              color: 'white',
+              border: '1px solid rgba(255, 255, 255, 0.3)',
+              borderRadius: '4px',
+              fontSize: '11px'
+            }}>
+              <option>All Zones</option>
+              <option>EEZ</option>
+              <option>MPA</option>
+              <option>Restricted</option>
+            </select>
+          </label>
+          
+          <label style={{ color: 'white', fontSize: '12px' }}>
+            Time Range
+            <select style={{
+              width: '100%',
+              marginTop: '4px',
+              padding: '4px 8px',
+              backgroundColor: 'rgba(255, 255, 255, 0.1)',
+              color: 'white',
+              border: '1px solid rgba(255, 255, 255, 0.3)',
+              borderRadius: '4px',
+              fontSize: '11px'
+            }}>
+              <option>Last 24h</option>
+              <option>Last 7 days</option>
+              <option>Last 30 days</option>
+              <option>Custom</option>
+            </select>
+          </label>
+          
+          <label style={{ color: 'white', fontSize: '12px' }}>
+            Min Risk Score
+            <input
+              type="range"
+              min="0"
+              max="1"
+              step="0.1"
+              defaultValue="0.3"
+              style={{
+                width: '100%',
+                marginTop: '4px'
+              }}
+            />
+            <div style={{ fontSize: '10px', color: 'rgba(255, 255, 255, 0.7)', textAlign: 'center' }}>
+              0.3
+            </div>
+          </label>
+          
+          <label style={{ color: 'white', fontSize: '12px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <input
+              type="checkbox"
+              defaultChecked
+              style={{ margin: 0 }}
+            />
+            Show Legend
+          </label>
+        </div>
+      </div>
+
       <div style={{
         position: 'absolute',
         inset: 0,
@@ -272,6 +398,10 @@ const HomePage: React.FC = () => {
             
             if (d.count == 1) {
               setHoveredVessel(d.markers[0]);
+              
+              // Fetch random vessel image
+              fetchVesselImage();
+              
               if (!d.markers[0].registered && hasAnyRole(['confidential', 'secret', 'top-secret'])) {
                 const now = new Date();
                 const ap: AgentPoint = {
@@ -355,6 +485,7 @@ const HomePage: React.FC = () => {
         onGlobeReady={()=>{clusterMarkers(vesselData)}}
         onZoom={(pov) => {handleZoom(pov)}}
       />
+      
       </div>
       
       {/* Vessel information popup */}
@@ -381,8 +512,7 @@ const HomePage: React.FC = () => {
         >
 
           <div style={{ fontWeight: 'bold', marginBottom: '12px', color: hoveredVessel.registered ? '#51cf66' : '#ff6b6b', fontSize: '16px' }}>
-            {hoveredVessel.registered ? hoveredVessel.shipName  : 'Unregistered Vessel'} 
-            <ReactCountryFlag countryCode={hoveredVessel.flag} style={{float: 'right'}}/>
+            {hoveredVessel.registered ? hoveredVessel.shipName  : 'Unregistered Vessel'}
           </div>
 
           <div
@@ -397,10 +527,37 @@ const HomePage: React.FC = () => {
               justifyContent: 'center',
               border: '2px dashed rgba(255, 255, 255, 0.3)',
               color: 'rgba(255, 255, 255, 0.6)',
-              fontSize: '12px'
+              fontSize: '12px',
+              overflow: 'hidden',
+              position: 'relative'
             }}
           >
-            📷 Vessel Image Placeholder
+            {imageLoading ? (
+              <div style={{ textAlign: 'center' }}>
+                <div style={{ marginBottom: '8px' }}>⏳</div>
+                <div>Loading image...</div>
+              </div>
+            ) : vesselImageUrl ? (
+              <img
+                src={vesselImageUrl}
+                alt="Vessel SAR Image"
+                style={{
+                  width: '100%',
+                  height: '100%',
+                  objectFit: 'cover',
+                  borderRadius: '6px'
+                }}
+                onError={(e) => {
+                  console.error('Failed to load vessel image');
+                  e.currentTarget.style.display = 'none';
+                }}
+              />
+            ) : (
+              <div style={{ textAlign: 'center' }}>
+                <div style={{ marginBottom: '8px' }}>📷</div>
+                <div>Vessel Image Placeholder</div>
+              </div>
+            )}
           </div>
           
           <div style={{ marginBottom: '10px' }}>
@@ -421,6 +578,11 @@ const HomePage: React.FC = () => {
             onClick={() => {
               setHoveredVessel(null);
               setPopupPosition(null);
+              // Clean up image URL
+              if (vesselImageUrl) {
+                URL.revokeObjectURL(vesselImageUrl);
+                setVesselImageUrl(null);
+              }
             }}
             style={{
               width: '100%',

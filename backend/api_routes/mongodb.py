@@ -172,11 +172,15 @@ def getVesselDataForHotspotAnalysis(start_date: datetime = None, end_date: datet
         if not end_date:
             end_date = datetime.utcnow()
         
-        # Build query
+        # Convert datetime objects to ISO format strings for query
+        start_date_str = start_date.isoformat()
+        end_date_str = end_date.isoformat()
+        
+        # Build query with string timestamps
         query = {
             'timestamp': {
-                '$gte': start_date,
-                '$lte': end_date
+                '$gte': start_date_str,
+                '$lte': end_date_str
             }
         }
         
