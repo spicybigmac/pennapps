@@ -230,7 +230,7 @@ export default function AgentPanel({ open, point, onClose }: AgentPanelProps) {
                 </li>
                 <li>
                   <span className="text-gray-500">Timestamp:</span>{' '}
-                  {new Date(point.timestamp).toLocaleString()}
+                  {point.timestamp}
                 </li>
               </ul>
             </div>
