@@ -278,10 +278,7 @@ const HomePage: React.FC = () => {
     <div style={{ width: '100%', height: '100vh', position: 'relative', overflow: 'hidden' }}>
       <div style={{
         position: 'absolute',
-        inset: 0,
-        transition: 'transform 280ms ease',
-        transform: isAgentPanelOpen ? 'translateX(-80px) scale(0.9)' : 'none',
-        transformOrigin: 'center'
+        inset: 0
       }}>
         <Globe
           ref={globeEl}
