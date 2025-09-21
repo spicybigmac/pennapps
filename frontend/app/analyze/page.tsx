@@ -67,16 +67,27 @@ export default function AnalyzePage() {
               // Use actual clicked coordinates for accurate alignment
               const lngLat = [e.lngLat.lng, e.lngLat.lat] as [number, number];
 
+              // Format fields for better readability
+              const dt = new Date(timestamp);
+              const formatted = isNaN(dt.getTime())
+                ? timestamp
+                : dt.toLocaleString(undefined, {
+                    year: 'numeric', month: 'short', day: '2-digit',
+                    hour: '2-digit', minute: '2-digit', hour12: false, timeZone: 'UTC'
+                  });
+              const roundedLng = lngLat[0].toFixed(2);
+              const roundedLat = lngLat[1].toFixed(2);
+
               const html = `
-                <div style="min-width:180px">
-                  <div style="font-weight:600;margin-bottom:6px">${title}</div>
-                  <ul style="margin:0;padding-left:14px;font-size:12px;line-height:1.4">
-                    <li><strong>timestamp</strong>: ${timestamp}</li>
-                    <li><strong>location</strong>: ${lngLat[0].toFixed(6)}, ${lngLat[1].toFixed(6)}</li>
-                    <li><strong>classification</strong>: ${classification}</li>
-                    <li><strong>confidence</strong>: ${(confidence * 100).toFixed(0)}%</li>
-                    <li><strong>vessel length</strong>: ${vesselLengthMeters} m</li>
-                  </ul>
+                <div class="popup-card">
+                  <div class="popup-title">${title}</div>
+                  <div class="popup-dl">
+                    <div class="row"><dt>Timestamp</dt><dd>${formatted}</dd></div>
+                    <div class="row"><dt>Location</dt><dd>${roundedLng}, ${roundedLat}</dd></div>
+                    <div class="row"><dt>Classification</dt><dd>${classification}</dd></div>
+                    <div class="row"><dt>Confidence</dt><dd>${(confidence * 100).toFixed(0)}%</dd></div>
+                    <div class="row"><dt>Vessel Length</dt><dd>${vesselLengthMeters} m</dd></div>
+                  </div>
                 </div>`;
 
               new mapboxgl.Popup({ className: 'expansi-popup', maxWidth: '220px' })
@@ -172,13 +183,11 @@ export default function AnalyzePage() {
 
   return (
     <div className="flex h-screen bg-black text-white font-sans relative">
-      {/* Divider */}
-      <div className={`split-divider pointer-events-none absolute inset-y-0 left-1/2 -translate-x-1/2`}></div>
       {/* Left Panel - Analysis Chat */}
-      <div className={`w-1/2 flex flex-col border-r border-gray-900/60 h-screen`}> 
+      <div className={`w-1/2 flex flex-col h-screen`}> 
         {/* Header */}
         <div className="p-4 border-b border-gray-800">
-          <h1 className="text-2xl font-semibold">OverSear Analysis Center</h1>
+          <h1 className="text-2xl font-semibold">OverSea Analysis Center</h1>
           <p className="text-sm text-gray-400">AI-powered maritime surveillance analysis</p>
         </div>
 
@@ -250,10 +259,16 @@ export default function AnalyzePage() {
         </div>
       </div>
 
+      {/* Vertical Separator */}
+      <div className="w-px bg-gradient-to-b from-white/10 via-white/20 to-white/10" />
+
       {/* Right Panel - Mapbox */}
       <div className={`w-1/2 bg-black relative h-screen`}>
         <div ref={mapContainerRef} className="absolute inset-0" style={{ height: '100%' }} />
       </div>
+
+      {/* Center fade between chat and map (very subtle, non-interactive) */}
+      <div className="pointer-events-none absolute inset-y-0 left-1/2 -translate-x-1/2 w-12 bg-gradient-to-r from-transparent via-black/40 to-transparent" />
     </div>
   );
 }
