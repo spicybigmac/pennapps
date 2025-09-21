@@ -51,7 +51,6 @@ const HomePage: React.FC = () => {
 
   // Image functionality state
   const [vesselImageUrl, setVesselImageUrl] = useState<string | null>(null);
-  const [imageLoading, setImageLoading] = useState<boolean>(false);
 
   const [hotspotData, setHotspotData] = useState<HotspotData[]>([]);
   const [isDataLoaded, setIsDataLoaded] = useState(false);
@@ -225,38 +224,6 @@ const HomePage: React.FC = () => {
     setClusteredData(clusters);
   }, [globeEl, timeL, timeR, showRegistered]);
 
-  // Function to fetch vessel image
-  const fetchVesselImage = useCallback(async () => {
-    if (!hoveredVessel) return;
-    
-    setImageLoading(true);
-    setVesselImageUrl(null);
-    
-    try {
-      const timestamp = Date.now();
-      const response = await fetch(`http://127.0.0.1:8000/api/images/vessel-image?t=${timestamp}`, {
-        method: 'GET',
-        headers: {
-          'Cache-Control': 'no-cache',
-          'Pragma': 'no-cache'
-        },
-        cache: 'no-cache'
-      });
-      
-      if (response.ok) {
-        const blob = await response.blob();
-        const imageUrl = URL.createObjectURL(blob);
-        setVesselImageUrl(imageUrl);
-      } else {
-        console.error('Failed to fetch vessel image:', response.status);
-      }
-    } catch (error) {
-      console.error('Error fetching vessel image:', error);
-    } finally {
-      setImageLoading(false);
-    }
-  }, [hoveredVessel]);
-
   const handleZoom = useCallback(() => { // Removed `pov` as it's not used directly from the param
     clusterMarkers(vesselData); // Cluster filtered data
     setHoveredVessel(null);
@@ -354,28 +321,6 @@ const HomePage: React.FC = () => {
     };
   }, [fetchData]);
 
-  // Fetch image when vessel is selected
-  useEffect(() => {
-    if (hoveredVessel) {
-      fetchVesselImage();
-    } else {
-      // Clean up image URL when popup is closed
-      if (vesselImageUrl) {
-        URL.revokeObjectURL(vesselImageUrl);
-        setVesselImageUrl(null);
-      }
-    }
-  }, [hoveredVessel, fetchVesselImage]);
-
-  // Clean up image URL on component unmount
-  useEffect(() => {
-    return () => {
-      if (vesselImageUrl) {
-        URL.revokeObjectURL(vesselImageUrl);
-      }
-    };
-  }, [vesselImageUrl]);
-
   // Helper to format timestamp for display
   const formatTimestamp = (timestamp: number) => {
     return new Date(timestamp).toISOString().split('T')[0];
@@ -470,6 +415,28 @@ const HomePage: React.FC = () => {
               e.stopPropagation();
 
               if (d.count === 1) {
+                setVesselImageUrl([
+                  "SAR/Screenshot 2025-09-21 at 2.07.03 AM.png",
+                  "SAR/Screenshot 2025-09-21 at 2.07.37 AM.png",
+                  "SAR/Screenshot 2025-09-21 at 2.07.50 AM.png",
+                  "SAR/Screenshot 2025-09-21 at 2.07.59 AM.png",
+                  "SAR/Screenshot 2025-09-21 at 2.08.07 AM.png",
+                  "SAR/Screenshot 2025-09-21 at 2.08.18 AM.png",
+                  "SAR/Screenshot 2025-09-21 at 2.08.34 AM.png",
+                  "SAR/Screenshot 2025-09-21 at 2.08.49 AM.png",
+                  "SAR/Screenshot 2025-09-21 at 2.09.00 AM.png",
+                  "SAR/Screenshot 2025-09-21 at 2.09.41 AM.png",
+                  "SAR/Screenshot 2025-09-21 at 2.09.53 AM.png",
+                  "SAR/Screenshot 2025-09-21 at 2.10.02 AM.png",
+                  "SAR/Screenshot 2025-09-21 at 2.10.10 AM.png",
+                  "SAR/Screenshot 2025-09-21 at 2.10.19 AM.png",
+                  "SAR/Screenshot 2025-09-21 at 2.10.29 AM.png",
+                  "SAR/Screenshot 2025-09-21 at 2.10.38 AM.png",
+                  "SAR/Screenshot 2025-09-21 at 2.10.48 AM.png",
+                  "SAR/Screenshot 2025-09-21 at 2.11.01 AM.png",
+                  "SAR/Screenshot 2025-09-21 at 2.11.13 AM.png",
+                  "SAR/Screenshot 2025-09-21 at 2.11.23 AM.png"
+                ][Math.floor(Math.random()*20)]);
                 setHoveredVessel(d.markers[0]);
                 const popupHeight = 300;
                 const popupWidth = 320;
@@ -592,20 +559,7 @@ const HomePage: React.FC = () => {
               overflow: 'hidden'
             }}
           >
-            {imageLoading ? (
-              <div style={{ textAlign: 'center' }}>
-                <div style={{
-                  width: '20px',
-                  height: '20px',
-                  border: '2px solid #333',
-                  borderTop: '2px solid #2eb700',
-                  borderRadius: '50%',
-                  animation: 'spin 1s linear infinite',
-                  margin: '0 auto 8px'
-                }}></div>
-                Loading SAR image...
-              </div>
-            ) : vesselImageUrl ? (
+            {vesselImageUrl ? (
               <img
                 src={vesselImageUrl}
                 alt="SAR Image"
@@ -617,7 +571,7 @@ const HomePage: React.FC = () => {
                 }}
               />
             ) : (
-              '📷 Click to load SAR image'
+              '📷 Unable to load SAR image'
             )}
           </div>
 
@@ -810,7 +764,7 @@ const HomePage: React.FC = () => {
         </>
       )}
 
-      {(isDataLoaded || !isFirstLoad) && !hasAnyRole(['confidential', 'secret', 'top-secret']) && <div id="headsup"><p>Login to view unregistered vessels</p></div>}
+      {(isDataLoaded || !isFirstLoad) && !hasAnyRole(['confidential', 'secret', 'top-secret']) && <div id="headsup"><p>Request higher clearance to view unregistered vessels</p></div>}
       
       <style jsx>{`
         @keyframes spin {
