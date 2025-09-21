@@ -543,7 +543,7 @@ const HomePage: React.FC = () => {
 
         {/* New toggle button for registered markers */}
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '5px' }}>
-          <label htmlFor="toggle-registered" style={{ fontSize: '0.9em' }}>Show Registered Markers</label>
+          <label htmlFor="toggle-registered" style={{ fontSize: '0.9em' }}>Show Registered</label>
           <label className="switch">
             <input
               type="checkbox"
