@@ -47,8 +47,6 @@ const HomePage: React.FC = () => {
   // Auth state
   const { user, hasAnyRole } = useAuth();
 
-  const getFlagEmoji = (countryCode : string)=>String.fromCodePoint(...[...countryCode.toUpperCase()].map(x=>0x1f1a5+x.charCodeAt(0)))
-
   const markerSvg = `<svg viewBox="-4 0 36 36">
     <path fill="currentColor" d="M14,0 C21.732,0 28,5.641 28,12.6 C28,23.963 14,36 14,36 C14,36 0,24.064 0,12.6 C0,5.641 6.268,0 14,0 Z"></path>
     <circle fill="black" cx="14" cy="14" r="7"></circle>
@@ -60,15 +58,15 @@ const HomePage: React.FC = () => {
     <text x="14" y="18" text-anchor="middle" fill="white" font-size="10" font-weight="bold">${count}</text>
   </svg>`;
 
-  const clusterBase = 1000;
-  const cullingBase = 8000;
+  const clusterBase = 1500;
+  const cullingBase = 6000;
 
   const clusterMarkers = (markers: VesselData[]) => {
     if (markers.length === 0) return [];
 
     const pov = globeEl.current ? globeEl.current.pointOfView() : {lat:0, lng: 0, altitude:2.5};
     const clusterThreshold = Math.min(10000, clusterBase * pov.altitude);
-    const cullingThreshold = Math.max(1, Math.min(80000, cullingBase * pov.altitude));
+    const cullingThreshold = Math.max(1, Math.min(60000, cullingBase * pov.altitude));
     
     const clusters: ClusterData[] = [];
     const processed = new Set<number>();
@@ -410,10 +408,13 @@ const HomePage: React.FC = () => {
           <div style={{ marginBottom: '10px' }}>
             <strong>Timestamp:</strong> {hoveredVessel.timestamp}
           </div>
-
-          <div style={{ marginBottom: '10px' }}>
-            <strong>Geartype:</strong> {hoveredVessel.geartype}
-          </div>
+          
+          { 
+            hoveredVessel.geartype !== "" ?
+            <div style={{ marginBottom: '10px' }}>
+              <strong>Geartype:</strong> {hoveredVessel.geartype}
+            </div> : null
+          }
           
           {/* Agent Chat trigger removed */}
 
