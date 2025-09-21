@@ -31,41 +31,79 @@ export default function AnalyzePage() {
     mapRef.current = new mapboxgl.Map({
       container: mapContainerRef.current,
       style: 'mapbox://styles/tcytseven/cmfscq4hy003901qpcl7m8jlb',
-      center: [-74.5, 40],
-      zoom: 9
+      center: [-79.5, 31.5],
+      zoom: 5.25,
+      bearing: 0,
+      pitch: 0
     });
 
     mapRef.current.on('load', () => {
-      // Attach popups to existing purple point layers in the style using source-layer 'dummy'
+      // Fit to Southeast US coastal area similar to screenshot (FL to NC)
+      try {
+        mapRef.current!.fitBounds([
+          [-84.5, 24.5], // SW (Gulf side south FL)
+          [-74.0, 36.8]  // NE (offshore NC)
+        ], { padding: 40, animate: false });
+      } catch {}
+      // Attach popups to symbol/circle layers from the style (cover both 'yummy' and 'dummy')
       const style = mapRef.current!.getStyle();
       const targetLayerIds = (style.layers || [])
-        .filter((l: any) => (l.type === 'circle' || l.type === 'symbol') && l['source-layer'] === 'dummy')
+        .filter((l: any) => (l.type === 'circle' || l.type === 'symbol') && ['yummy','dummy'].includes(l['source-layer']))
         .map((l) => l.id);
 
-      // Load unique vessel data from public/vessels.json
-      fetch('/vessels.json')
-        .then((r) => r.json())
-        .then((fc: GeoJSON.FeatureCollection) => {
-          const features = fc.features as Array<GeoJSON.Feature<GeoJSON.Point, any>>;
+      targetLayerIds.forEach((layerId) => {
+        // Hide features with disallowed names so icons don't render
+        try {
+          const existing = mapRef.current!.getFilter(layerId) as any;
+          const nameExpr: any = ['downcase', ['coalesce',
+            ['to-string', ['get', 'name']],
+            ['to-string', ['get', 'title']],
+            ['to-string', ['get', 'vesselName']],
+            ['to-string', ['get', 'vessel_name']],
+            ['to-string', ['get', 'shipname']],
+            ''
+          ]];
+          const notBanned: any = ['all',
+            ['!=', nameExpr, 'unknown'],
+            ['!=', nameExpr, 'speed boat'],
+            ['!=', nameExpr, 'speedboat'],
+            ['!=', nameExpr, 'speed-boat'],
+            ['!=', nameExpr, 'speed_boat'],
+            ['!=', nameExpr, 'tourist cruise'],
+            ['!=', nameExpr, 'touristcruise'],
+            ['!=', nameExpr, 'tourist-cruise'],
+            ['!=', nameExpr, 'tourist_cruise'],
+            ['!=', nameExpr, '']
+          ];
+          const combined = existing ? ['all', existing as any, notBanned] : notBanned;
+          mapRef.current!.setFilter(layerId, combined as any);
+        } catch {}
 
-          targetLayerIds.forEach((layerId) => {
-            mapRef.current!.on('click', layerId, (e: any) => {
-              const f = e.features?.[0];
-              if (!f) return;
-              // Pick a unique feature based on clicked coordinates (stable hash)
-              const lng = e.lngLat.lng;
-              const lat = e.lngLat.lat;
-              const hash = ((Math.floor((lng + 180) * 1000) & 0xffff) << 16) ^ (Math.floor((lat + 90) * 1000) & 0xffff);
-              const chosen = features[Math.abs(hash) % Math.max(1, features.length)];
-              const props = chosen.properties || {};
-              const title = props.title || 'Vessel';
-              const classification = props.classification || 'not fishing';
-              const confidence = typeof props.confidence === 'number' ? props.confidence : 0.7;
-              const vesselLengthMeters = props.vesselLengthMeters ?? 50;
-              const timestamp = props.timestamp || new Date().toISOString();
+        mapRef.current!.on('click', layerId, (e: any) => {
+          const f = e.features?.[0];
+          if (!f) return;
+          const props: any = f.properties || {};
+          const rawNameValue = props.name ?? props.title ?? props.vesselName ?? props.vessel_name ?? props.shipname ?? '';
+          const rawName = String(rawNameValue);
+          const normalized = rawName
+            .normalize('NFKC')
+            .replace(/[\u200B-\u200D\uFEFF]/g, '')
+            .replace(/[_-]/g, ' ')
+            .replace(/\s+/g, ' ')
+            .trim()
+            .toLowerCase();
+          if (normalized === 'unknown' || normalized === 'speed boat' || normalized === 'speedboat' || normalized === 'tourist cruise') {
+            return; // Do not display these
+          }
+          const title = (rawName && rawName.trim()) || 'Vessel';
+          const classification = props.classification || props.category || 'not fishing';
+          const rawConfidence = typeof props.confidence === 'number' ? props.confidence : (props.confidence ? Number(props.confidence) : 0.85);
+          const confidencePct = isFinite(rawConfidence) ? (rawConfidence <= 1 ? rawConfidence * 100 : rawConfidence) : 85;
+          const vesselLengthMeters = props.vesselLengthMeters ?? props.length ?? 50;
+          const timestamp = props.timestamp || new Date().toISOString();
 
-              // Use actual clicked coordinates for accurate alignment
-              const lngLat = [e.lngLat.lng, e.lngLat.lat] as [number, number];
+          // Use actual clicked coordinates for accurate alignment
+          const lngLat = [e.lngLat.lng, e.lngLat.lat] as [number, number];
 
               // Format fields for better readability
               const dt = new Date(timestamp);
@@ -85,33 +123,30 @@ export default function AnalyzePage() {
                     <div class="row"><dt>Timestamp</dt><dd>${formatted}</dd></div>
                     <div class="row"><dt>Location</dt><dd>${roundedLng}, ${roundedLat}</dd></div>
                     <div class="row"><dt>Classification</dt><dd>${classification}</dd></div>
-                    <div class="row"><dt>Confidence</dt><dd>${(confidence * 100).toFixed(0)}%</dd></div>
+                    <div class="row"><dt>Confidence</dt><dd>${confidencePct.toFixed(0)}%</dd></div>
                     <div class="row"><dt>Vessel Length</dt><dd>${vesselLengthMeters} m</dd></div>
                   </div>
                 </div>`;
+          new mapboxgl.Popup({ className: 'expansi-popup', maxWidth: '220px' })
+            .setLngLat(lngLat)
+            .setHTML(html)
+            .addTo(mapRef.current!);
 
-              new mapboxgl.Popup({ className: 'expansi-popup', maxWidth: '220px' })
-                .setLngLat(lngLat)
-                .setHTML(html)
-                .addTo(mapRef.current!);
+          setSelectedTarget(title);
+          setMessages((prev) => [
+            ...prev,
+            { id: Date.now().toString(), type: 'assistant', content: title, timestamp: new Date() }
+          ]);
+        });
 
-              setSelectedTarget(title);
-              setMessages((prev) => [
-                ...prev,
-                { id: Date.now().toString(), type: 'assistant', content: title, timestamp: new Date() }
-              ]);
-            });
-
-            // Cursor feedback
-            mapRef.current!.on('mouseenter', layerId, () => {
-              mapRef.current!.getCanvas().style.cursor = 'pointer';
-            });
-            mapRef.current!.on('mouseleave', layerId, () => {
-              mapRef.current!.getCanvas().style.cursor = '';
-            });
-          });
-        })
-        .catch(() => {});
+        // Cursor feedback
+        mapRef.current!.on('mouseenter', layerId, () => {
+          mapRef.current!.getCanvas().style.cursor = 'pointer';
+        });
+        mapRef.current!.on('mouseleave', layerId, () => {
+          mapRef.current!.getCanvas().style.cursor = '';
+        });
+      });
     });
 
     return () => {
