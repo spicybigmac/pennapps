@@ -239,7 +239,7 @@ const HomePage: React.FC = () => {
     }
 
     try {
-      const response = await fetch('http://127.0.0.1:8000/api/hotspots/', {
+      const response = await fetch('http://127.0.0.1:8000/api/hotspots/globe-data', {
         method: 'GET',
         headers: { 'Content-Type': 'application/json' },
       });
@@ -375,20 +375,7 @@ const HomePage: React.FC = () => {
 
               if (d.count === 1) {
                 setHoveredVessel(d.markers[0]);
-                if (!d.markers[0].registered && hasAnyRole(['confidential', 'secret', 'top-secret'])) {
-                  const ap: AgentPoint = {
-                    id: d.markers[0].id, // Assuming 'id' exists on VesselData for AgentPoint
-                    lat: d.markers[0].lat,
-                    lng: d.markers[0].lng,
-                    timestamp: d.markers[0].timestamp,
-                    mmsi: d.markers[0].mmsi,
-                    imo: d.markers[0].imo,
-                    flag: d.markers[0].flag,
-                    shipName: d.markers[0].shipName,
-                    geartype: d.markers[0].geartype
-                  };
-                  setAgentPoint(ap);
-                }
+                
                 const popupHeight = 300;
                 const popupWidth = 320;
                 const screenHeight = window.innerHeight;
@@ -522,6 +509,19 @@ const HomePage: React.FC = () => {
           {!hoveredVessel.registered && hasAnyRole(['confidential', 'secret', 'top-secret']) && (
             <button
               onClick={() => {
+                if (!hoveredVessel.registered && hasAnyRole(['confidential', 'secret', 'top-secret'])) {
+                  const ap: AgentPoint = {
+                    lat: hoveredVessel.lat,
+                    lng: hoveredVessel.lng,
+                    timestamp: hoveredVessel.timestamp,
+                    mmsi: hoveredVessel.mmsi,
+                    imo: hoveredVessel.imo,
+                    flag: hoveredVessel.flag,
+                    shipName: hoveredVessel.shipName,
+                    geartype: hoveredVessel.geartype
+                  };
+                  setAgentPoint(ap);
+                }
                 setIsAgentPanelOpen(true);
                 setHoveredVessel(null);
                 setPopupPosition(null);
