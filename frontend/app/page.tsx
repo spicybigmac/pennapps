@@ -248,7 +248,7 @@ const LandingPage: React.FC = () => {
               color: '#ccc',
               lineHeight: '1.4'
             }}>
-              Advanced Maritime Intelligence & Surveillance Platform
+              OverSEAing the sustainability of our seas.
             </h2>
 
             {/* Enter Button */}
