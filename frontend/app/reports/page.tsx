@@ -140,7 +140,7 @@ const ReportsPage = () => {
   };
 
   return (
-    <div className="flex-1 p-8 text-white flex">
+    <div className="flex-1 p-8 text-white flex" style={{marginLeft:"104px"}}>
       {/* Left side: Reports List */}
       <div className="w-1/2 pr-8 border-r border-gray-800">
         <h1 className="text-3xl font-bold mb-4">Reports</h1>
