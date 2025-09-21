@@ -67,7 +67,8 @@ yarn-debug.log*` file with this corrected version:
 # Build output from the frontend directory
 /frontend/build/
 /frontend/dist/
-
+/model/aux_data/World_EEZ_v12_20231025
+/model/aux_data/ETOPO_2022_v1_15s_N60W030_bed.tif
 # IDE / Editor folders
 .idea/
 .vscode/
