@@ -13,7 +13,7 @@ export default function AgentToast({ title = 'Illegal Vessel Detected', subtitle
   return (
     <div
       className="relative top-0 left-0 z-[1000] text-white rounded-b-2xl shadow-2xl border border-white/10 bg-black/70"
-      style={{ backdropFilter: 'blur(10px)', width: 'min(400px, 92vw)', marginLeft:"12px"}}
+      style={{ backdropFilter: 'blur(10px)', width: 'min(400px, 92vw)', marginLeft:"104px"}}
     >
       <div className="px-6 py-4">
         <div className="flex items-start gap-4">
