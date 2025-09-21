@@ -86,6 +86,30 @@ const HomePage: React.FC = () => {
   const clusterBase = 1500;
   const cullingBase = 7000;
 
+  const calculate = () => {
+    const filteredVessels = vesselData.filter(vessel => {
+      const vesselTime = new Date(vessel.timestamp).getTime();
+      return vesselTime >= timeL && vesselTime <= timeR;
+    });
+    const totalVessels = filteredVessels.length;
+    const unregisteredVessels = filteredVessels.filter(v => !v.registered).length;
+    const percentageUnregistered = totalVessels > 0 ? ((unregisteredVessels / totalVessels) * 100).toFixed(2) : '0.00';
+
+    return (
+      <>
+        <div style={{ marginBottom: '8px', fontSize: '0.9em' }}>
+          <strong>Total Vessels:</strong> {totalVessels}
+        </div>
+        <div style={{ marginBottom: '8px', fontSize: '0.9em' }}>
+          <strong>Total Unregistered Vessels:</strong> {unregisteredVessels}
+        </div>
+        <div style={{ fontSize: '0.9em' }}>
+          <strong>% Unregistered:</strong> {percentageUnregistered}%
+        </div>
+      </>
+    );
+  }
+
   const clusterMarkers = useCallback((markers: VesselData[], cull=true) => {
     if (markers.length === 0) return;
 
@@ -685,7 +709,7 @@ const HomePage: React.FC = () => {
 
       {/* Rounded window for timestamp slider */}
     
-      <div
+            <div
         style={{
           position: 'fixed',
           right: '20px', // Move to top right corner
@@ -745,15 +769,8 @@ const HomePage: React.FC = () => {
 
         {/* Stats below filter options */}
         <div style={{ borderTop: '1px solid rgba(255, 255, 255, 0.2)', paddingTop: '15px', marginTop: '10px' }}>
-          <div style={{ marginBottom: '8px', fontSize: '0.9em' }}>
-            <strong>Total Vessels:</strong> {vesselData.length}
-          </div>
-          <div style={{ marginBottom: '8px', fontSize: '0.9em' }}>
-            <strong>Total Unregistered Vessels:</strong> {vesselData.filter(v => !v.registered).length}
-          </div>
-          <div style={{ fontSize: '0.9em' }}>
-            <strong>% Unregistered:</strong> {vesselData.length > 0 ? ((vesselData.filter(v => !v.registered).length / vesselData.length) * 100).toFixed(2) : '0.00'}%
-          </div>
+          {/* Calculate filtered data for stats */}
+          {calculate()}
         </div>
         {/* End Stats */}
 
