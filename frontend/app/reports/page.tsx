@@ -19,8 +19,8 @@ const reports: Report[] = [
     clearance: 'Public Trust',
   },
   {
-    id: 'ai-agent-performance-q3-2025',
-    title: 'AI Agent Performance Q3',
+    id: 'voice-agent-performance-q3-2025',
+    title: 'Voice Agent Performance Q3',
     date: '2025-09-18',
     clearance: 'Confidential',
   },
