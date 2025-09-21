@@ -33,6 +33,7 @@ const ReportDisplayPage = ({ params }: { params: Promise<{ reportId:string }> })
   const resolvedParams = use(params);
   const [reportData, setReportData] = useState<ReportData | null>(null);
   const [generatedJson, setGeneratedJson] = useState<any | null>(null);
+  const [customTitle, setCustomTitle] = useState<string>('');
 
   const exportElementToPDF = (elementId: string, title: string) => {
     if (typeof window === 'undefined') return;
@@ -70,6 +71,11 @@ const ReportDisplayPage = ({ params }: { params: Promise<{ reportId:string }> })
       try {
         const parsed = JSON.parse(jsonStr);
         setGeneratedJson(parsed);
+        // Load stored custom title, if available
+        const savedTitle = typeof window !== 'undefined' ? localStorage.getItem(`report_title_${resolvedParams.reportId}`) : null;
+        if (savedTitle) {
+          setCustomTitle(savedTitle);
+        }
         setReportData(null);
         return;
       } catch (e) {
@@ -93,12 +99,16 @@ const ReportDisplayPage = ({ params }: { params: Promise<{ reportId:string }> })
             <span>All Reports</span>
           </Link>
           <h1 className="text-3xl font-bold mb-2">
-            Report: <span className="text-gray-400 capitalize">{resolvedParams.reportId.replaceAll('-', ' ')}</span>
+            {customTitle ? (
+              <span>{customTitle}</span>
+            ) : (
+              <>Report: <span className="text-gray-400 capitalize">{resolvedParams.reportId.replaceAll('-', ' ')}</span></>
+            )}
           </h1>
           <p className="text-gray-500 mb-8">Generated on: {new Date().toLocaleDateString()}</p>
           <div className="mb-4 flex justify-end">
             <button
-              onClick={() => exportElementToPDF('report-content', `Report ${resolvedParams.reportId}`)}
+              onClick={() => exportElementToPDF('report-content', customTitle ? customTitle : `Report ${resolvedParams.reportId}`)}
               className="px-4 py-2 bg-white text-black rounded-md font-semibold hover:bg-gray-300"
             >
               Export PDF
