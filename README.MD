@@ -2,7 +2,7 @@
 
 # OverSEA
 
-Dark vessel scanning for sustainable seas.
+OverSEAing the sustainability of seas.
 
 # Overview
 
