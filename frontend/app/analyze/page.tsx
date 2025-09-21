@@ -217,7 +217,7 @@ export default function AnalyzePage() {
   };
 
   return (
-    <div className="flex h-screen bg-black text-white font-sans relative">
+    <div className="flex h-screen bg-black text-white font-sans relative" style={{marginLeft:"10px"}}>
       {/* Left Panel - Analysis Chat */}
       <div className={`w-1/2 flex flex-col h-screen`}> 
         {/* Header */}

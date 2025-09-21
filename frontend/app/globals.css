@@ -89,3 +89,16 @@ body {
   100% { opacity: 1; transform: translate(-50%, 0); }
 }
 .anim-slide-from-top { animation: slideFromTop 260ms ease-out; }
+
+.sidebar {
+  position: absolute;
+  top: 0; 
+  left: 0; 
+  z-index: 1100; 
+  transform: translateX(-95%);
+  transition: transform 0.2s ease-in-out ;
+}
+
+.sidebar:hover {
+  transform: translateX(0);
+}
