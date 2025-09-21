@@ -12,8 +12,8 @@ export type AgentToastProps = {
 export default function AgentToast({ title = 'Illegal Vessel Detected', subtitle, onOpen, onDismiss }: AgentToastProps) {
   return (
     <div
-      className="relative top-0 left-0 z-[1100] text-white rounded-b-2xl shadow-2xl border border-white/10 bg-black/70"
-      style={{ backdropFilter: 'blur(10px)', width: 'min(400px, 92vw)' }}
+      className="relative top-0 left-0 z-[1000] text-white rounded-b-2xl shadow-2xl border border-white/10 bg-black/70"
+      style={{ backdropFilter: 'blur(10px)', width: 'min(400px, 92vw)', marginLeft:"12px"}}
     >
       <div className="px-6 py-4">
         <div className="flex items-start gap-4">
