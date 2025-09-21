@@ -39,7 +39,6 @@ const LandingPage: React.FC = () => {
   // Minimal data for landing page globe background
   const [clusteredData, setClusteredData] = useState<ClusterData[]>([]);
   const [vesselData, setVesselData] = useState<VesselData[]>([]); // To simulate data for the background globe
-
   const GREEN = "#2eb700";
   const RED = "#fc0303";
 
@@ -108,7 +107,6 @@ const LandingPage: React.FC = () => {
 
     fetchData();
   }, [fetchData]);
-
   const handleEnterDashboard = () => {
     router.push('/dashboard'); // Navigate to the dashboard page
   };

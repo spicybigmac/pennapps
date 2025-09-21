@@ -102,10 +102,12 @@ app.add_middleware(
 
 # Include API routers
 from api_routes.ais_routes import router as ais_router
-from api_routes.hotspot_routes import router as hotspot_router
+from api_routes.clean_hotspot_routes import router as clean_hotspot_router
+from api_routes.image_routes import router as image_router
 
 app.include_router(ais_router)
-app.include_router(hotspot_router)
+app.include_router(clean_hotspot_router)
+app.include_router(image_router)
 
 
 # Main API routes defined directly in main.py
