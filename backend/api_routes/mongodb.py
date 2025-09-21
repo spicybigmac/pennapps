@@ -27,18 +27,19 @@ db = client["pennapps"]
 # Existing collections
 prompt_logs = db["prompt_logs"]
 pos_data = db["position_data"]
+report_logs = db["report_logs"]
 
 # AIS data collections
 vessel_positions = db["vessel_positions"]
 monitoring_zones = db["monitoring_zones"]
 ais_metadata = db["ais_metadata"]
 
-def logPos(vessel):
+def logPos(lat, lon, matched, vessel):
     pos_data.insert_one({
         "date": vessel["date"],
-        "latitude": vessel["lat"],
-        "longitude": vessel["lon"],
-        "matched": vessel["matched"],
+        "latitude": lat,
+        "longitude": lon,
+        "matched": matched,
         "mmsi": vessel["mmsi"],
         "imo": vessel["imo"],
         "flag": vessel["flag"],
@@ -51,6 +52,12 @@ def logPrompt(user, prompt, answer):
         "user": user,
         "prompt": prompt,
         "answer": answer,
+    })
+
+def logReport(user, report):
+    report_logs.insert_one({
+        "user": user,
+        "report": report
     })
 
 def getPos():

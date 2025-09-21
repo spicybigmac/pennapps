@@ -55,6 +55,7 @@ class ReportGenerateRequest(BaseModel):
     time_start: Optional[str] = None
     time_end: Optional[str] = None
     clearance: str = "Public Trust"
+    user_id: str = "anonymous"
     sections: ReportSections
 
 # @asynccontextmanager
@@ -345,7 +346,7 @@ async def generate_report(request: ReportGenerateRequest):
 
         # Log prompt for auditing (truncate content)
         try:
-            mongodb.logPrompt("report_generator", prompt, json.dumps(report_json)[:5000])
+            mongodb.logPrompt(request.user_id, prompt, json.dumps(report_json)[:5000])
         except Exception:
             pass
 

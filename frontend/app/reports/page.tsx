@@ -2,6 +2,7 @@
 import Link from 'next/link';
 import React, { useState } from 'react';
 import Modal from '../../components/Modal';
+import { useAuth } from '../../hooks/useAuth';
 
 interface Report {
   id: string;
@@ -42,6 +43,7 @@ for (let i = 0; i < 24; i++) {
 const ReportsPage = () => {
   const [isShareModalOpen, setIsShareModalOpen] = useState(false);
   const [reportToShare, setReportToShare] = useState<Report | null>(null);
+  const { user } = useAuth();
 
   // Form state
   const [dateStart, setDateStart] = useState<string>('');
@@ -84,6 +86,7 @@ const ReportsPage = () => {
         time_start: timeStart || null,
         time_end: timeEnd || null,
         clearance,
+        user_id: user?.sub || 'anonymous',
         sections: {
           iuu_activity: sections.iuu_activity,
           ai_voice_agent: sections.ai_voice_agent,

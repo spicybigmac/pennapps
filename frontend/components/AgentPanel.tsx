@@ -114,7 +114,7 @@ export default function AgentPanel({ open, point, onClose }: AgentPanelProps) {
         const geminiResponse = await fetch("http://127.0.0.1:8000/api/ai/gemini/chat", {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ prompt: chatPrompt, user_id: point.id}),
+          body: JSON.stringify({ prompt: chatPrompt, user_id: user?.sub || 'anonymous'}),
         });
 
         if(!geminiResponse.ok){
