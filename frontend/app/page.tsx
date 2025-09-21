@@ -6,6 +6,7 @@ import * as topojson from 'topojson-client';
 import AgentToast from '../components/AgentToast';
 import AgentPanel, { type AgentPoint } from '../components/AgentPanel';
 import { useAuth } from '../hooks/useAuth';
+import ReactCountryFlag from 'react-country-flag';
 
 const Globe = dynamic(() => import('react-globe.gl'), { ssr: false });
 
@@ -14,7 +15,11 @@ interface VesselData {
   lng: number;
   registered: boolean;
   timestamp: string;
-  id: string; 
+  geartype: string;
+  mmsi: string;
+  imo: string;
+  shipName: string;
+  flag: string;
 }
 
 interface ClusterData {
@@ -22,7 +27,6 @@ interface ClusterData {
   lng: number;
   count: number;
   markers: VesselData[];
-  timestamp: string;
   registered: boolean;
   closest: number;
 }
@@ -43,6 +47,8 @@ const HomePage: React.FC = () => {
   // Auth state
   const { user, hasAnyRole } = useAuth();
 
+  const getFlagEmoji = (countryCode : string)=>String.fromCodePoint(...[...countryCode.toUpperCase()].map(x=>0x1f1a5+x.charCodeAt(0)))
+
   const markerSvg = `<svg viewBox="-4 0 36 36">
     <path fill="currentColor" d="M14,0 C21.732,0 28,5.641 28,12.6 C28,23.963 14,36 14,36 C14,36 0,24.064 0,12.6 C0,5.641 6.268,0 14,0 Z"></path>
     <circle fill="black" cx="14" cy="14" r="7"></circle>
@@ -60,7 +66,7 @@ const HomePage: React.FC = () => {
   const clusterMarkers = (markers: VesselData[]) => {
     if (markers.length === 0) return [];
 
-    const pov = globeEl.current.pointOfView();
+    const pov = globeEl.current ? globeEl.current.pointOfView() : {lat:0, lng: 0, altitude:2.5};
     const clusterThreshold = Math.min(10000, clusterBase * pov.altitude);
     const cullingThreshold = Math.max(1, Math.min(80000, cullingBase * pov.altitude));
     
@@ -90,7 +96,6 @@ const HomePage: React.FC = () => {
         count: 1,
         markers: [marker],
         registered: marker.registered,
-        timestamp: marker.timestamp,
         closest: Infinity
       };
       
@@ -185,7 +190,7 @@ const HomePage: React.FC = () => {
         clusterMarkers(data);
       }
     } catch (error) {
-      console.error('Error fetching vessel data:', error);
+      console.log('Error fetching vessel data:', error);
     }
   }
 
@@ -273,7 +278,12 @@ const HomePage: React.FC = () => {
                   id: d.markers[0].id,
                   lat: d.markers[0].lat,
                   lng: d.markers[0].lng,
-                  timestamp: d.markers[0].timestamp
+                  timestamp: d.markers[0].timestamp,
+                  mmsi: d.markers[0].mmsi,
+                  imo: d.markers[0].imo,
+                  flag: d.markers[0].flag,
+                  shipName: d.markers[0].shipName,
+                  geartype: d.markers[0].geartype
                 };
                 setAgentPoint(ap);
                 setShowAgentToast(true);
@@ -371,7 +381,8 @@ const HomePage: React.FC = () => {
         >
 
           <div style={{ fontWeight: 'bold', marginBottom: '12px', color: hoveredVessel.registered ? '#51cf66' : '#ff6b6b', fontSize: '16px' }}>
-            {hoveredVessel.registered ? 'Registered' : 'Unregistered'}
+            {hoveredVessel.registered ? hoveredVessel.shipName  : 'Unregistered Vessel'} 
+            <ReactCountryFlag countryCode={hoveredVessel.flag} style={{float: 'right'}}/>
           </div>
 
           <div
@@ -398,6 +409,10 @@ const HomePage: React.FC = () => {
 
           <div style={{ marginBottom: '10px' }}>
             <strong>Timestamp:</strong> {hoveredVessel.timestamp}
+          </div>
+
+          <div style={{ marginBottom: '10px' }}>
+            <strong>Geartype:</strong> {hoveredVessel.geartype}
           </div>
           
           {/* Agent Chat trigger removed */}

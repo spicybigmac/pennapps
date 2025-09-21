@@ -8,6 +8,11 @@ export type AgentPoint = {
   lat: number;
   lng: number;
   timestamp: string;
+  mmsi: string;
+  imo: string;
+  flag: string;
+  shipName: string;
+  geartype: string;
 };
 
 export type AgentPanelProps = {
