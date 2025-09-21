@@ -337,10 +337,10 @@ const ReportDisplayPage = ({ params }: { params: Promise<{ reportId:string }> })
           
           <section>
             <h2 className="text-xl font-semibold mb-4 border-b border-gray-800 pb-3">
-              AI Voice Agent Performance
+              AI Agent Performance
             </h2>
             <p className="text-gray-400 text-sm mb-6">
-              The following metrics evaluate the performance of the automated AI Voice Agent. The success rate is defined as the percentage of calls resulting in a confirmed receipt of information without requiring human operator intervention.
+              The following metrics evaluate the performance of the automated AI Agent. The success rate is defined as the percentage of calls resulting in a confirmed receipt of information without requiring human operator intervention.
             </p>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-8 items-center">
                 {/* Chart 1: Success Rate */}
@@ -423,7 +423,7 @@ const ReportDisplayPage = ({ params }: { params: Promise<{ reportId:string }> })
                 </div>
             </div>
             <p className="text-gray-300 text-sm mt-6">
-              <strong>Summary:</strong> The voice agent continues to perform with high efficacy, successfully managing the majority of outbound alerts. The low escalation rate of {reportData.agentPerformance.escalation_rate}% indicates a high level of autonomy and reliability. Call duration remains efficient, contributing to operational cost savings.
+              <strong>Summary:</strong> The  agent continues to perform with high efficacy, successfully managing the majority of outbound alerts. The low escalation rate of {reportData.agentPerformance.escalation_rate}% indicates a high level of autonomy and reliability. Call duration remains efficient, contributing to operational cost savings.
             </p>
           </section>
         </div>
