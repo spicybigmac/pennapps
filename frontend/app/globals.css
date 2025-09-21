@@ -90,6 +90,11 @@ body {
 }
 .anim-slide-from-top { animation: slideFromTop 260ms ease-out; }
 
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
 .sidebar {
   position: absolute;
   top: 0; 

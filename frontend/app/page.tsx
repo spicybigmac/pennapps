@@ -3,7 +3,6 @@
 import dynamic from 'next/dynamic';
 import React, { useRef, useEffect, useState, useCallback, useMemo } from 'react'; // Added useCallback, useMemo
 import * as topojson from 'topojson-client';
-import AgentToast from '../components/AgentToast';
 import AgentPanel, { type AgentPoint } from '../components/AgentPanel';
 import { useAuth } from '../hooks/useAuth';
 import ReactCountryFlag from 'react-country-flag';
@@ -31,16 +30,29 @@ interface ClusterData {
   closest: number;
 }
 
+interface HotspotData {
+  lat: number;
+  lng: number;
+  size: number;
+}
+
 const HomePage: React.FC = () => {
+  const GREEN = "#2eb700";
+  const RED = "#fc0303";
+  const DARK_RED = "#bf0202";
+
   const globeEl = useRef<any>(null);
   const [landData, setLandData] = useState<{ features: any[] }>({ features: [] });
   const [vesselData, setVesselData] = useState<VesselData[]>([]);
+
   const [clusteredData, setClusteredData] = useState<ClusterData[]>([]);
   const [hoveredVessel, setHoveredVessel] = useState<VesselData | null>(null);
   const [popupPosition, setPopupPosition] = useState<{ x: number; y: number } | null>(null);
 
-  // Agent toast & panel state
-  const [showAgentToast, setShowAgentToast] = useState(false);
+  const [hotspotData, setHotspotData] = useState<HotspotData[]>([]);
+  const [isDataLoaded, setIsDataLoaded] = useState(false);
+
+  // Agent panel state
   const [agentPoint, setAgentPoint] = useState<AgentPoint | null>(null);
   const [isAgentPanelOpen, setIsAgentPanelOpen] = useState(false);
 
@@ -189,6 +201,8 @@ const HomePage: React.FC = () => {
   }, [clusterMarkers, vesselData]);
 
   const fetchData = useCallback(async () => {
+    setIsDataLoaded(false);
+    
     try {
       const response = await fetch('http://127.0.0.1:8000/api/getPositions', {
         method: 'GET',
@@ -217,9 +231,25 @@ const HomePage: React.FC = () => {
         }
 
         clusterMarkers(vesselData);
+        setIsDataLoaded(true);
       }
     } catch (error) {
       console.log('Error fetching vessel data:', error);
+      setIsDataLoaded(true); // Set to true even on error to show the interface
+    }
+
+    try {
+      const response = await fetch('http://127.0.0.1:8000/api/hotspots/', {
+        method: 'GET',
+        headers: { 'Content-Type': 'application/json' },
+      });
+      const data: HotspotData[] = await response.json();
+      if(response.ok){
+        //setHotspotData(data);
+        console.log(data);
+      }
+    } catch (error) {
+      console.log('Error fetching hotspot data:', error);
     }
   }, []);
 
@@ -276,11 +306,38 @@ const HomePage: React.FC = () => {
 
   return (
     <div style={{ width: '100%', height: '100vh', position: 'relative', overflow: 'hidden' }}>
-      <div style={{
-        position: 'absolute',
-        inset: 0
-      }}>
-        <Globe
+      {!isDataLoaded ? (
+        <div style={{
+          position: 'absolute',
+          inset: 0,
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          backgroundColor: '#000',
+          color: 'white',
+          fontSize: '18px',
+          fontFamily: 'Arial, sans-serif'
+        }}>
+          <div style={{ textAlign: 'center' }}>
+            <div style={{ 
+              width: '40px', 
+              height: '40px', 
+              border: '3px solid #333', 
+              borderTop: '3px solid #fff', 
+              borderRadius: '50%', 
+              animation: 'spin 1s linear infinite',
+              margin: '0 auto 20px'
+            }}></div>
+            Loading vessel data...
+          </div>
+        </div>
+      ) : (
+        <>
+          <div style={{
+            position: 'absolute',
+            inset: 0
+          }}>
+            <Globe
           ref={globeEl}
           globeImageUrl={null}
           bumpImageUrl={null}
@@ -306,7 +363,7 @@ const HomePage: React.FC = () => {
               el.innerHTML = markerSvg;
             }
 
-            el.style.color = d.registered ? "#2eb700ff" : "#fc0303";
+            el.style.color = d.registered ? GREEN : RED;
             el.style.width = `${40 + d.count / 200}px`;
             el.style.height = 'auto';
             el.style.cursor = 'pointer';
@@ -331,7 +388,6 @@ const HomePage: React.FC = () => {
                     geartype: d.markers[0].geartype
                   };
                   setAgentPoint(ap);
-                  setShowAgentToast(true);
                 }
                 const popupHeight = 300;
                 const popupWidth = 320;
@@ -400,9 +456,9 @@ const HomePage: React.FC = () => {
           onGlobeReady={() => { clusterMarkers(vesselData); }} // Use filtered data on ready
           onZoom={() => { handleZoom(); }}
         />
-      </div>
+          </div>
 
-      {/* Vessel information popup */}
+          {/* Vessel information popup */}
       {hoveredVessel && popupPosition && (
         <div
           data-popup="vessel-info"
@@ -425,8 +481,8 @@ const HomePage: React.FC = () => {
           }}
         >
 
-          <div style={{ fontWeight: 'bold', marginBottom: '12px', color: hoveredVessel.registered ? '#51cf66' : '#ff6b6b', fontSize: '16px' }}>
-            {hoveredVessel.registered ? hoveredVessel.shipName : 'Unregistered Vessel'}
+          <div style={{ fontWeight: 'bold', marginBottom: '12px', color: hoveredVessel.registered ? GREEN : RED, fontSize: '16px' }}>
+            {hoveredVessel.registered ? hoveredVessel.shipName : '[UNREGISTERED VESSEL]'}
             <ReactCountryFlag countryCode={hoveredVessel.flag} style={{ float: 'right' }} />
           </div>
 
@@ -462,6 +518,37 @@ const HomePage: React.FC = () => {
                 <strong>Geartype:</strong> {hoveredVessel.geartype}
               </div> : null
           }
+
+          {!hoveredVessel.registered && hasAnyRole(['confidential', 'secret', 'top-secret']) && (
+            <button
+              onClick={() => {
+                setIsAgentPanelOpen(true);
+                setHoveredVessel(null);
+                setPopupPosition(null);
+              }}
+              style={{
+                width: '100%',
+                padding: '10px 16px',
+                backgroundColor: RED,
+                color: 'white',
+                border: 'none',
+                borderRadius: '6px',
+                cursor: 'pointer',
+                fontSize: '13px',
+                fontWeight: '600',
+                marginBottom: '10px',
+                transition: 'all 0.2s ease'
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.backgroundColor = DARK_RED;
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.backgroundColor = RED;
+              }}
+            >
+              Open Agent
+            </button>
+          )}
 
           <button
             onClick={() => {
@@ -583,15 +670,9 @@ const HomePage: React.FC = () => {
         </button>
       </div>
 
-      {/* Agent Panel and Toast */}
-      <AgentPanel open={isAgentPanelOpen} point={agentPoint} onClose={() => setIsAgentPanelOpen(false)} />
-      {showAgentToast && agentPoint && hasAnyRole(['confidential', 'secret', 'top-secret']) && (
-        <AgentToast
-          title="Unregistered Vessel Detected"
-          subtitle={`${agentPoint.lat.toFixed(4)}°, ${agentPoint.lng.toFixed(4)}°, ${agentPoint.timestamp}`}
-          onOpen={() => { setIsAgentPanelOpen(true); setShowAgentToast(false); }}
-          onDismiss={() => setShowAgentToast(false)}
-        />
+          {/* Agent Panel */}
+          <AgentPanel open={isAgentPanelOpen} point={agentPoint} onClose={() => setIsAgentPanelOpen(false)} />
+        </>
       )}
     </div>
   );
