@@ -18,7 +18,7 @@ const Sidebar = () => {
 
   const navItems: NavItem[] = [
     { href: '/', label: 'Dashboard' },
-    { href: '/analyze', label: 'Gemini' },
+    { href: '/analyze', label: 'Intelligence Console' },
     { href: '/reports', label: 'Reports' },
     { href: '/profile', label: 'Profile' },
   ];
