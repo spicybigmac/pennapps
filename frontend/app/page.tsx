@@ -59,14 +59,14 @@ const HomePage: React.FC = () => {
   </svg>`;
 
   const clusterBase = 1500;
-  const cullingBase = 6000;
+  const cullingBase = 7000;
 
   const clusterMarkers = (markers: VesselData[]) => {
     if (markers.length === 0) return [];
 
     const pov = globeEl.current ? globeEl.current.pointOfView() : {lat:0, lng: 0, altitude:2.5};
     const clusterThreshold = Math.min(10000, clusterBase * pov.altitude);
-    const cullingThreshold = Math.max(1, Math.min(60000, cullingBase * pov.altitude));
+    const cullingThreshold = Math.max(1, Math.min(70000, cullingBase * pov.altitude));
     
     const clusters: ClusterData[] = [];
     const processed = new Set<number>();
@@ -236,7 +236,7 @@ const HomePage: React.FC = () => {
         ref={globeEl}
         globeImageUrl={null}
         bumpImageUrl={null}
-        backgroundImageUrl={null}
+        backgroundImageUrl={"night-sky.png"}
         showGlobe={false}
         showAtmosphere={false}
         backgroundColor={'rgba(0,0,0,0)'}
