@@ -1,0 +1,38 @@
+{
+  "completed_months": [
+    1,
+    2,
+    3,
+    4,
+    5
+  ],
+  "completed_regions": {
+    "1": [
+      "Primary_Region_8465_8465",
+      "Secondary_Region_8466_8466"
+    ],
+    "2": [
+      "Primary_Region_8465_8465",
+      "Secondary_Region_8466_8466"
+    ],
+    "3": [
+      "Primary_Region_8465_8465",
+      "Secondary_Region_8466_8466"
+    ],
+    "4": [
+      "Primary_Region_8465_8465",
+      "Secondary_Region_8466_8466"
+    ],
+    "5": [
+      "Primary_Region_8465_8465",
+      "Secondary_Region_8466_8466"
+    ]
+  },
+  "total_vessels_collected": 8899,
+  "start_time": "2025-09-21T03:49:11.133408",
+  "collection_stats": {
+    "total_unmatched_vessels": 4310,
+    "total_matched_vessels": 4589,
+    "total_requests_made": 10
+  }
+}

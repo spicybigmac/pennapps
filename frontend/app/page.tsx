@@ -278,10 +278,7 @@ const HomePage: React.FC = () => {
     <div style={{ width: '100%', height: '100vh', position: 'relative', overflow: 'hidden' }}>
       <div style={{
         position: 'absolute',
-        inset: 0,
-        transition: 'transform 280ms ease',
-        transform: isAgentPanelOpen ? 'translateX(-80px) scale(0.9)' : 'none',
-        transformOrigin: 'center'
+        inset: 0
       }}>
         <Globe
           ref={globeEl}
@@ -543,7 +540,7 @@ const HomePage: React.FC = () => {
 
         {/* New toggle button for registered markers */}
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '5px' }}>
-          <label htmlFor="toggle-registered" style={{ fontSize: '0.9em' }}>Show Registered Markers</label>
+          <label htmlFor="toggle-registered" style={{ fontSize: '0.9em' }}>Show Registered</label>
           <label className="switch">
             <input
               type="checkbox"

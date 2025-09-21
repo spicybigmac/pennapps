@@ -1,310 +1,470 @@
 'use client';
 
-import React, { useEffect, useRef, useState } from 'react';
-import mapboxgl from 'mapbox-gl';
+import Link from 'next/link';
+import React, { use, useState, useEffect } from 'react';
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, RadialBarChart, RadialBar, PieChart, Pie, Cell, Legend, AreaChart, Area } from 'recharts';
 
-interface ChatMessage {
-  id: string;
-  type: 'user' | 'assistant';
-  content: string;
-  timestamp: Date;
+interface WeeklyData {
+  week: string;
+  vessels_detected: number;
 }
 
-export default function AnalyzePage() {
-  const [messages, setMessages] = useState<ChatMessage[]>([]);
-  const [inputValue, setInputValue] = useState('');
-  const [isLoading, setIsLoading] = useState(false);
-  const [selectedTarget, setSelectedTarget] = useState<string | null>(null);
-  const mapContainerRef = useRef<HTMLDivElement | null>(null);
-  const mapRef = useRef<mapboxgl.Map | null>(null);
+interface CallOutcome {
+  name: string;
+  value: number;
+}
+
+interface AgentStats {
+  success_rate: number;
+  avg_call_duration_min: number;
+  escalation_rate: number;
+  total_calls_q3: number;
+  call_outcomes: CallOutcome[];
+}
+
+interface ReportData {
+  weeklyIUU: WeeklyData[];
+  agentPerformance: AgentStats;
+}
+
+const COLORS = ['#FFFFFF', '#A0AEC0', '#4A5568'];
+
+const ReportDisplayPage = ({ params }: { params: Promise<{ reportId:string }> }) => {
+  const resolvedParams = use(params);
+  const [reportData, setReportData] = useState<ReportData | null>(null);
+  const [generatedJson, setGeneratedJson] = useState<any | null>(null);
+  const [customTitle, setCustomTitle] = useState<string>('');
+
+  const exportElementToPDF = (elementId: string, title: string) => {
+    if (typeof window === 'undefined') return;
+    const node = document.getElementById(elementId);
+    if (!node) return;
+    const printWindow = window.open('', '_blank');
+    if (!printWindow) return;
+    const styles = `
+      <style>
+        @page { size: A4; margin: 16mm; }
+        html, body { background: #ffffff; color: #111827; font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial; }
+        h1,h2,h3 { color: #111827; margin: 0 0 8px 0; }
+        p { margin: 8px 0; line-height: 1.5; }
+        section { margin-bottom: 20px; }
+        .border { border-color: #e5e7eb; }
+        svg { max-width: 100% !important; height: auto !important; }
+      </style>
+    `;
+    printWindow.document.write(`<html><head><title>${title}</title>${styles}</head><body>`);
+    printWindow.document.write(node.innerHTML);
+    printWindow.document.write('</body></html>');
+    printWindow.document.close();
+    printWindow.focus();
+    setTimeout(() => {
+      printWindow.print();
+      printWindow.close();
+    }, 300);
+  };
 
   useEffect(() => {
-    if (!mapContainerRef.current) return;
-
-    const token = process.env.NEXT_PUBLIC_MAPBOX_TOKEN as string | undefined;
-    if (!token) {
-      console.warn('Missing NEXT_PUBLIC_MAPBOX_TOKEN');
-      return;
-    }
-    mapboxgl.accessToken = token;
-
-    mapRef.current = new mapboxgl.Map({
-      container: mapContainerRef.current,
-      style: 'mapbox://styles/tcytseven/cmfscq4hy003901qpcl7m8jlb',
-      center: [-79.5, 31.5],
-      zoom: 5.25,
-      bearing: 0,
-      pitch: 0
-    });
-
-    mapRef.current.on('load', () => {
-      // Fit to Southeast US coastal area similar to screenshot (FL to NC)
+    // If this is a generated report, load JSON and render react-based sections
+    const jsonKey = `report_json_${resolvedParams.reportId}`;
+    const jsonStr = typeof window !== 'undefined' ? localStorage.getItem(jsonKey) : null;
+    if (jsonStr) {
       try {
-        mapRef.current!.fitBounds([
-          [-84.5, 24.5], // SW (Gulf side south FL)
-          [-74.0, 36.8]  // NE (offshore NC)
-        ], { padding: 40, animate: false });
-      } catch {}
-      // Attach popups to symbol/circle layers from the style (cover both 'yummy' and 'dummy')
-      const style = mapRef.current!.getStyle();
-      const targetLayerIds = (style.layers || [])
-        .filter((l: any) => (l.type === 'circle' || l.type === 'symbol') && ['yummy','dummy'].includes(l['source-layer']))
-        .map((l) => l.id);
-
-      targetLayerIds.forEach((layerId) => {
-        // Hide features with disallowed names so icons don't render
-        try {
-          const existing = mapRef.current!.getFilter(layerId) as any;
-          const nameExpr: any = ['downcase', ['coalesce',
-            ['to-string', ['get', 'name']],
-            ['to-string', ['get', 'title']],
-            ['to-string', ['get', 'vesselName']],
-            ['to-string', ['get', 'vessel_name']],
-            ['to-string', ['get', 'shipname']],
-            ''
-          ]];
-          const notBanned: any = ['all',
-            ['!=', nameExpr, 'unknown'],
-            ['!=', nameExpr, 'speed boat'],
-            ['!=', nameExpr, 'speedboat'],
-            ['!=', nameExpr, 'speed-boat'],
-            ['!=', nameExpr, 'speed_boat'],
-            ['!=', nameExpr, 'tourist cruise'],
-            ['!=', nameExpr, 'touristcruise'],
-            ['!=', nameExpr, 'tourist-cruise'],
-            ['!=', nameExpr, 'tourist_cruise'],
-            ['!=', nameExpr, '']
-          ];
-          const combined = existing ? ['all', existing as any, notBanned] : notBanned;
-          mapRef.current!.setFilter(layerId, combined as any);
-        } catch {}
-
-        mapRef.current!.on('click', layerId, (e: any) => {
-          const f = e.features?.[0];
-          if (!f) return;
-          const props: any = f.properties || {};
-          const rawNameValue = props.name ?? props.title ?? props.vesselName ?? props.vessel_name ?? props.shipname ?? '';
-          const rawName = String(rawNameValue);
-          const normalized = rawName
-            .normalize('NFKC')
-            .replace(/[\u200B-\u200D\uFEFF]/g, '')
-            .replace(/[_-]/g, ' ')
-            .replace(/\s+/g, ' ')
-            .trim()
-            .toLowerCase();
-          if (normalized === 'unknown' || normalized === 'speed boat' || normalized === 'speedboat' || normalized === 'tourist cruise') {
-            return; // Do not display these
-          }
-          const title = (rawName && rawName.trim()) || 'Vessel';
-          const classification = props.classification || props.category || 'not fishing';
-          const rawConfidence = typeof props.confidence === 'number' ? props.confidence : (props.confidence ? Number(props.confidence) : 0.85);
-          const confidencePct = isFinite(rawConfidence) ? (rawConfidence <= 1 ? rawConfidence * 100 : rawConfidence) : 85;
-          const vesselLengthMeters = props.vesselLengthMeters ?? props.length ?? 50;
-          const timestamp = props.timestamp || new Date().toISOString();
-
-          // Use actual clicked coordinates for accurate alignment
-          const lngLat = [e.lngLat.lng, e.lngLat.lat] as [number, number];
-
-              // Format fields for better readability
-              const dt = new Date(timestamp);
-              const formatted = isNaN(dt.getTime())
-                ? timestamp
-                : dt.toLocaleString(undefined, {
-                    year: 'numeric', month: 'short', day: '2-digit',
-                    hour: '2-digit', minute: '2-digit', hour12: false, timeZone: 'UTC'
-                  });
-              const roundedLng = lngLat[0].toFixed(2);
-              const roundedLat = lngLat[1].toFixed(2);
-
-              const html = `
-                <div class="popup-card">
-                  <div class="popup-title">${title}</div>
-                  <div class="popup-dl">
-                    <div class="row"><dt>Timestamp</dt><dd>${formatted}</dd></div>
-                    <div class="row"><dt>Location</dt><dd>${roundedLng}, ${roundedLat}</dd></div>
-                    <div class="row"><dt>Classification</dt><dd>${classification}</dd></div>
-                    <div class="row"><dt>Confidence</dt><dd>${confidencePct.toFixed(0)}%</dd></div>
-                    <div class="row"><dt>Vessel Length</dt><dd>${vesselLengthMeters} m</dd></div>
-                  </div>
-                </div>`;
-          new mapboxgl.Popup({ className: 'expansi-popup', maxWidth: '220px' })
-            .setLngLat(lngLat)
-            .setHTML(html)
-            .addTo(mapRef.current!);
-
-          setSelectedTarget(title);
-          setMessages((prev) => [
-            ...prev,
-            { id: Date.now().toString(), type: 'assistant', content: `Selected vessel: ${title}`, timestamp: new Date() }
-          ]);
-        });
-
-        // Cursor feedback
-        mapRef.current!.on('mouseenter', layerId, () => {
-          mapRef.current!.getCanvas().style.cursor = 'pointer';
-        });
-        mapRef.current!.on('mouseleave', layerId, () => {
-          mapRef.current!.getCanvas().style.cursor = '';
-        });
-      });
-    });
-
-    return () => {
-      try { mapRef.current?.remove(); } catch {}
-    };
-  }, []);
-
-  const handleSendMessage = async () => {
-    if (!inputValue.trim()) return;
-
-    const userMessage: ChatMessage = {
-      id: Date.now().toString(),
-      type: 'user',
-      content: inputValue,
-      timestamp: new Date()
-    };
-
-    setMessages(prev => [...prev, userMessage]);
-    setInputValue('');
-    setIsLoading(true);
-
-    try {
-      const res = await fetch('http://127.0.0.1:8000/api/ai/analyze', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ prompt: inputValue, user_id: 'test-user' }), // Replace with actual user ID
-      });
-
-      if (!res.ok) {
-        throw new Error('Backend error');
-      }
-
-      const data = await res.json();
-      
-      const assistantMessage: ChatMessage = {
-        id: (Date.now() + 1).toString(),
-        type: 'assistant',
-        content: data.content,
-        timestamp: new Date()
-      };
-      
-      setMessages(prev => [...prev, assistantMessage]);
-
-      if (data.type === 'location' && data.data) {
-        const { lat, lng, name } = data.data;
-        if (mapRef.current) {
-          mapRef.current.flyTo({
-            center: [lng, lat],
-            zoom: 12,
-            speed: 1.5
-          });
-
-          new mapboxgl.Popup({ closeOnClick: false })
-            .setLngLat([lng, lat])
-            .setHTML(`<h4>${name}</h4>`)
-            .addTo(mapRef.current);
+        const parsed = JSON.parse(jsonStr);
+        setGeneratedJson(parsed);
+        // Load stored custom title, if available
+        const savedTitle = typeof window !== 'undefined' ? localStorage.getItem(`report_title_${resolvedParams.reportId}`) : null;
+        if (savedTitle) {
+          setCustomTitle(savedTitle);
         }
+        setReportData(null);
+        return;
+      } catch (e) {
+        // fall through to mock charts
       }
-    } catch (error) {
-      console.error('Error fetching from analyze API:', error);
-      const errorMessage: ChatMessage = {
-        id: (Date.now() + 1).toString(),
-        type: 'assistant',
-        content: "Sorry, I encountered an error. Please try again.",
-        timestamp: new Date()
-      };
-      setMessages(prev => [...prev, errorMessage]);
-    } finally {
-      setIsLoading(false);
     }
-  };
 
-  const handleKeyPress = (e: React.KeyboardEvent) => {
-    if (e.key === 'Enter' && !e.shiftKey) {
-      e.preventDefault();
-      handleSendMessage();
-    }
-  };
+    // Fallback to demo mock data for hardcoded reports
+    fetch('/mock-data.json')
+      .then((res) => res.json())
+      .then((data) => setReportData(data));
+  }, [resolvedParams.reportId]);
 
-  return (
-    <div className="flex h-screen bg-black text-white font-sans relative">
-      {/* Left Panel - Analysis Chat */}
-      <div className={`w-1/2 flex flex-col h-screen`}> 
-        {/* Header */}
-        <div className="p-4 border-b border-gray-800">
-          <h1 className="text-2xl font-semibold">OverSea Analysis Center</h1>
-          <p className="text-sm text-gray-400">AI-powered maritime surveillance analysis</p>
-        </div>
+  // Render generated JSON reports with charts
+  if (generatedJson) {
+    return (
+      <div className="flex-1 p-8 text-white">
+        <div className="max-w-4xl">
+          <Link href="/reports" className="flex items-center space-x-2 text-gray-400 hover:text-white mb-6">
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M19 12H5"/><path d="m12 19-7-7 7-7"/></svg>
+            <span>All Reports</span>
+          </Link>
+          <h1 className="text-3xl font-bold mb-2">
+            {customTitle ? (
+              <span>{customTitle}</span>
+            ) : (
+              <>Report: <span className="text-gray-400 capitalize">{resolvedParams.reportId.replaceAll('-', ' ')}</span></>
+            )}
+          </h1>
+          <p className="text-gray-500 mb-8">Generated on: {new Date().toLocaleDateString()}</p>
+          
+          <div id="report-content" className="bg-black border border-gray-800 rounded-lg p-8 space-y-10">
+            {/* Executive Summary */}
+            {Array.isArray(generatedJson.executiveSummary) && (
+              <section>
+                <h2 className="text-xl font-semibold mb-4 border-b border-gray-800 pb-3">Executive Summary</h2>
+                <div className="space-y-4 text-gray-300">
+                  {generatedJson.executiveSummary.map((p: string, idx: number) => (
+                    <p key={idx}>{p}</p>
+                  ))}
+                </div>
+              </section>
+            )}
 
-        {/* Test Button has been removed and integrated into the chat */}
+            {/* Sections */}
+            {Array.isArray(generatedJson.sections) && generatedJson.sections.map((s: any, idx: number) => (
+              <section key={idx}>
+                <h2 className="text-xl font-semibold mb-4 border-b border-gray-800 pb-3">{s?.heading || 'Section'}</h2>
+                <div className="space-y-4 text-gray-300">
+                  {(Array.isArray(s?.content) ? s.content : []).map((p: string, i: number) => (
+                    <p key={i}>{p}</p>
+                  ))}
+                </div>
+                {s?.chart?.callout && (
+                  <p className="text-gray-400 text-sm mt-3"><em>Chart callout:</em> {s.chart.callout}</p>
+                )}
 
-        {/* Chat Messages */}
-        <div className="flex-1 overflow-y-auto p-4 space-y-4">
-          {messages.map((message) => (
-            <div
-              key={message.id}
-              className={`flex ${message.type === 'user' ? 'justify-end' : 'justify-start'}`}
-            >
-              <div
-                className={`max-w-[80%] p-3 rounded-lg ${
-                  message.type === 'user'
-                    ? 'bg-white text-black'
-                    : 'bg-black border border-gray-800 text-white'
-                }`}
-              >
-                <p className="text-sm whitespace-pre-wrap">{message.content}</p>
-                <p className="text-xs text-gray-500 text-right mt-1.5">
-                  {message.timestamp.toLocaleTimeString()}
-                </p>
-              </div>
-            </div>
-          ))}
-          {isLoading && (
-            <div className="flex justify-start">
-              <div className="bg-black p-3 rounded-lg border border-gray-800">
-                <div className="flex space-x-1.5">
-                  <div className="w-2 h-2 bg-gray-500 rounded-full animate-bounce"></div>
-                  <div className="w-2 h-2 bg-gray-500 rounded-full animate-bounce" style={{ animationDelay: '0.1s' }}></div>
-                  <div className="w-2 h-2 bg-gray-500 rounded-full animate-bounce" style={{ animationDelay: '0.2s' }}></div>
+                {/* Chart selection */}
+                <div className="mt-6 h-64">
+                  <ResponsiveContainer>
+                    {(() => {
+                      const type = s?.chart?.type || 'none';
+                      const heading = (s?.heading || '').toLowerCase();
+                      // Sample data tailored to sustainability theme
+                      if (type === 'bar' || heading.includes('iuu')) {
+                        const data = [
+                          { label: 'Hotspot A', incidents: 7 },
+                          { label: 'Hotspot B', incidents: 5 },
+                          { label: 'Hotspot C', incidents: 3 },
+                          { label: 'Hotspot D', incidents: 2 },
+                        ];
+                        return (
+                          <BarChart data={data} margin={{ top: 5, right: 20, left: -10, bottom: 5 }}>
+                            <CartesianGrid strokeDasharray="3 3" stroke="#2D3748" />
+                            <XAxis dataKey="label" stroke="#A0AEC0" fontSize={12} />
+                            <YAxis stroke="#A0AEC0" fontSize={12} />
+                            <Tooltip contentStyle={{ backgroundColor: 'rgba(0,0,0,0.85)', borderColor: '#4A5568', color: '#E2E8F0' }} />
+                            <Bar dataKey="incidents" fill="#E2E8F0" radius={[4,4,0,0]} />
+                          </BarChart>
+                        );
+                      }
+                      if (type === 'radial' || heading.includes('voice agent')) {
+                        const success = 82;
+                        const radialData = [{ name: 'Success Rate', value: success }];
+                        return (
+                          <RadialBarChart innerRadius="80%" outerRadius="100%" data={radialData} startAngle={90} endAngle={-270}>
+                            <RadialBar background dataKey="value" fill="#FFFFFF" cornerRadius={10} />
+                            <text x="50%" y="50%" textAnchor="middle" dominantBaseline="middle" className="text-2xl font-semibold fill-white">{`${success}%`}</text>
+                            <text x="50%" y="65%" textAnchor="middle" dominantBaseline="middle" className="text-sm fill-gray-400">Success Rate</text>
+                          </RadialBarChart>
+                        );
+                      }
+                      if (type === 'pie' || heading.includes('economic')) {
+                        const pieData = [
+                          { name: 'Compliance Savings', value: 45 },
+                          { name: 'Patrol Efficiency', value: 30 },
+                          { name: 'Market Stability', value: 25 },
+                        ];
+                        const COLORS = ['#FFFFFF', '#A0AEC0', '#4A5568'];
+                        return (
+                          <PieChart>
+                            <Pie data={pieData} cx="50%" cy="50%" innerRadius={60} outerRadius={80} paddingAngle={5} dataKey="value">
+                              {pieData.map((entry, i) => (<Cell key={i} fill={COLORS[i % COLORS.length]} />))}
+                            </Pie>
+                            <Tooltip contentStyle={{ backgroundColor: 'rgba(0,0,0,0.85)', borderColor: '#4A5568', color: '#E2E8F0' }} />
+                            <Legend iconSize={10} wrapperStyle={{ fontSize: '12px', color: '#A0AEC0' }} />
+                          </PieChart>
+                        );
+                      }
+                      // Default sustainability line/area chart
+                      const areaData = [
+                        { t: 'Wk 1', co2: 2.1 },
+                        { t: 'Wk 2', co2: 2.4 },
+                        { t: 'Wk 3', co2: 1.9 },
+                        { t: 'Wk 4', co2: 1.6 },
+                      ];
+                      return (
+                        <AreaChart data={areaData} margin={{ top: 5, right: 20, left: -10, bottom: 5 }}>
+                          <defs>
+                            <linearGradient id="co2" x1="0" y1="0" x2="0" y2="1">
+                              <stop offset="5%" stopColor="#FFFFFF" stopOpacity={0.8}/>
+                              <stop offset="95%" stopColor="#FFFFFF" stopOpacity={0.1}/>
+                            </linearGradient>
+                          </defs>
+                          <CartesianGrid strokeDasharray="3 3" stroke="#2D3748" />
+                          <XAxis dataKey="t" stroke="#A0AEC0" fontSize={12} />
+                          <YAxis stroke="#A0AEC0" fontSize={12} />
+                          <Tooltip contentStyle={{ backgroundColor: 'rgba(0,0,0,0.85)', borderColor: '#4A5568', color: '#E2E8F0' }} />
+                          <Area type="monotone" dataKey="co2" stroke="#FFFFFF" fill="url(#co2)" />
+                        </AreaChart>
+                      );
+                    })()}
+                  </ResponsiveContainer>
+                </div>
+              </section>
+            ))}
+
+            {/* Estimated Sustainability Impact */}
+            <section>
+              <h2 className="text-xl font-semibold mb-4 border-b border-gray-800 pb-3">Estimated Sustainability Impact</h2>
+              <p className="text-gray-300 mb-4">Based on observed compliance improvements and deterrence effects in the selected period, we estimate the following positive environmental outcomes. These estimates are illustrative and directionally conservative.</p>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                {/* Endangered fish saved (bar) */}
+                <div className="h-64">
+                  <ResponsiveContainer>
+                    <BarChart data={[{species:'Bluefin Tuna', saved: 140},{species:'Hammerhead Shark', saved: 90},{species:'Sea Turtles', saved: 60}] } margin={{ top: 5, right: 20, left: -10, bottom: 5 }}>
+                      <CartesianGrid strokeDasharray="3 3" stroke="#2D3748" />
+                      <XAxis dataKey="species" stroke="#A0AEC0" fontSize={12} />
+                      <YAxis stroke="#A0AEC0" fontSize={12} />
+                      <Tooltip contentStyle={{ backgroundColor: 'rgba(0,0,0,0.85)', borderColor: '#4A5568', color: '#E2E8F0' }} />
+                      <Bar dataKey="saved" fill="#E2E8F0" radius={[4,4,0,0]} />
+                    </BarChart>
+                  </ResponsiveContainer>
+                </div>
+                {/* Pollution avoided (area) */}
+                <div className="h-64">
+                  <ResponsiveContainer>
+                    <AreaChart data={[{t:'Wk 1', tons: 3.2},{t:'Wk 2', tons: 3.8},{t:'Wk 3', tons: 4.1},{t:'Wk 4', tons: 4.6}]} margin={{ top: 5, right: 20, left: -10, bottom: 5 }}>
+                      <defs>
+                        <linearGradient id="tons" x1="0" y1="0" x2="0" y2="1">
+                          <stop offset="5%" stopColor="#FFFFFF" stopOpacity={0.8}/>
+                          <stop offset="95%" stopColor="#FFFFFF" stopOpacity={0.1}/>
+                        </linearGradient>
+                      </defs>
+                      <CartesianGrid strokeDasharray="3 3" stroke="#2D3748" />
+                      <XAxis dataKey="t" stroke="#A0AEC0" fontSize={12} />
+                      <YAxis stroke="#A0AEC0" fontSize={12} />
+                      <Tooltip contentStyle={{ backgroundColor: 'rgba(0,0,0,0.85)', borderColor: '#4A5568', color: '#E2E8F0' }} />
+                      <Area type="monotone" dataKey="tons" stroke="#FFFFFF" fill="url(#tons)" />
+                    </AreaChart>
+                  </ResponsiveContainer>
+                </div>
+                {/* Prevention mix (pie) */}
+                <div className="h-64">
+                  <ResponsiveContainer>
+                    <PieChart>
+                      <Pie data={[{name:'Oil discharge prevented', value: 40},{name:'Illegal dumping deterred', value: 35},{name:'Bycatch reduction', value: 25}]} cx="50%" cy="50%" innerRadius={60} outerRadius={80} paddingAngle={5} dataKey="value">
+                        {['#FFFFFF','#A0AEC0','#4A5568'].map((c, i) => (<Cell key={i} fill={c} />))}
+                      </Pie>
+                      <Tooltip contentStyle={{ backgroundColor: 'rgba(0,0,0,0.85)', borderColor: '#4A5568', color: '#E2E8F0' }} />
+                      <Legend iconSize={10} wrapperStyle={{ fontSize: '12px', color: '#A0AEC0' }} />
+                    </PieChart>
+                  </ResponsiveContainer>
                 </div>
               </div>
-            </div>
-          )}
-        </div>
-
-        {/* Input Area */}
-        <div className="p-4 border-t border-gray-800">
-          <div className="flex space-x-3">
-            <input
-              type="text"
-              value={inputValue}
-              onChange={(e) => setInputValue(e.target.value)}
-              onKeyPress={handleKeyPress}
-              placeholder="Ask about the analysis..."
-              className="flex-1 bg-black border border-gray-700 rounded-lg px-4 py-2 text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-gray-600 focus:border-transparent"
-              disabled={isLoading}
-            />
-            <button
-              onClick={handleSendMessage}
-              disabled={isLoading || !inputValue.trim()}
-              className="bg-white hover:bg-gray-300 disabled:bg-gray-800 disabled:text-gray-500 text-black px-5 py-2 rounded-lg transition-colors"
-            >
-              Send
-            </button>
+            </section>
           </div>
         </div>
       </div>
+    );
+  }
+  
+  // If neither generatedJson nor reportData is ready yet, show a lightweight loading state
+  if (!reportData) {
+    return <div className="flex-1 p-8 text-white text-center">Loading report data...</div>;
+  }
+  
+  const successRateData = [{ name: 'Success Rate', value: reportData.agentPerformance.success_rate }];
 
-      {/* Vertical Separator */}
-      <div className="w-px bg-gradient-to-b from-white/10 via-white/20 to-white/10" />
+  return (
+    <div className="flex-1 p-8 text-white">
+      <div className="max-w-4xl">
+        <Link href="/reports" className="flex items-center space-x-2 text-gray-400 hover:text-white mb-6">
+          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M19 12H5"/><path d="m12 19-7-7 7-7"/></svg>
+          <span>All Reports</span>
+        </Link>
+        <h1 className="text-3xl font-bold mb-2">
+          Report: <span className="text-gray-400 capitalize">{resolvedParams.reportId.replaceAll('-', ' ')}</span>
+        </h1>
+        <p className="text-gray-500 mb-8">Generated on: {new Date().toLocaleDateString()}</p>
+        
+        <div id="report-content" className="bg-black border border-gray-800 rounded-lg p-8 space-y-12">
+          <section>
+            <h2 className="text-xl font-semibold mb-4 border-b border-gray-800 pb-3">
+              Weekly IUU Activity Analysis
+            </h2>
+            <p className="text-gray-400 text-sm mb-6">
+              This section provides a week-over-week summary of detected vessels engaged in suspected Illegal, Unreported, and Unregulated (IUU) fishing activities. The data is aggregated from AIS, satellite imagery, and environmental sensor fusion.
+            </p>
+            <div style={{ width: '100%', height: 300 }}>
+              <ResponsiveContainer>
+                <BarChart data={reportData.weeklyIUU} margin={{ top: 5, right: 20, left: -10, bottom: 5 }}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="#2D3748" />
+                  <XAxis dataKey="week" stroke="#A0AEC0" fontSize={12} />
+                  <YAxis stroke="#A0AEC0" fontSize={12} />
+                  <Tooltip
+                    cursor={{ fill: 'rgba(255, 255, 255, 0.1)' }}
+                    contentStyle={{
+                      backgroundColor: 'rgba(0, 0, 0, 0.8)',
+                      borderColor: '#4A5568',
+                      color: '#E2E8F0',
+                    }}
+                  />
+                  <Bar dataKey="vessels_detected" fill="#E2E8F0" radius={[4, 4, 0, 0]} />
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
+            <p className="text-gray-400 text-xs mt-4 text-center">
+              Figure 1: Count of vessels flagged for IUU-like behavior over the past four weeks.
+            </p>
+            <p className="text-gray-300 text-sm mt-6">
+              <strong>Analysis:</strong> A notable increase in flagged activity was observed in Week 37, coinciding with seasonal migration patterns of target species. Further investigation into the satellite reconnaissance data from this period is recommended.
+            </p>
+          </section>
+          
+          <section>
+            <h2 className="text-xl font-semibold mb-4 border-b border-gray-800 pb-3">
+              AI Agent Performance
+            </h2>
+            <p className="text-gray-400 text-sm mb-6">
+              The following metrics evaluate the performance of the automated AI Agent. The success rate is defined as the percentage of calls resulting in a confirmed receipt of information without requiring human operator intervention.
+            </p>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-8 items-center">
+                {/* Chart 1: Success Rate */}
+                <div className="h-64 flex flex-col items-center justify-center">
+                    <ResponsiveContainer>
+                      <RadialBarChart 
+                        innerRadius="80%" 
+                        outerRadius="100%" 
+                        data={successRateData} 
+                        startAngle={90} 
+                        endAngle={-270}
+                      >
+                        <RadialBar
+                          background
+                          dataKey='value'
+                          fill="#FFFFFF"
+                          cornerRadius={10}
+                        />
+                        <text 
+                          x="50%" 
+                          y="50%" 
+                          textAnchor="middle" 
+                          dominantBaseline="middle" 
+                          className="text-2xl font-semibold fill-white"
+                        >
+                          {`${reportData.agentPerformance.success_rate}%`}
+                        </text>
+                         <text 
+                          x="50%" 
+                          y="65%" 
+                          textAnchor="middle" 
+                          dominantBaseline="middle" 
+                          className="text-sm fill-gray-400"
+                        >
+                          Success Rate
+                        </text>
+                      </RadialBarChart>
+                    </ResponsiveContainer>
+                </div>
+                {/* Chart 2: Call Outcomes */}
+                <div className="h-64">
+                    <ResponsiveContainer>
+                        <PieChart>
+                            <Pie
+                                data={reportData.agentPerformance.call_outcomes as any}
+                                cx="50%"
+                                cy="50%"
+                                innerRadius={60}
+                                outerRadius={80}
+                                fill="#8884d8"
+                                paddingAngle={5}
+                                dataKey="value"
+                            >
+                                {reportData.agentPerformance.call_outcomes.map((entry, index) => (
+                                <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                                ))}
+                            </Pie>
+                            <Tooltip
+                                cursor={{ fill: 'rgba(255, 255, 255, 0.1)' }}
+                                contentStyle={{
+                                    backgroundColor: 'rgba(0, 0, 0, 0.8)',
+                                    borderColor: '#4A5568',
+                                    color: '#E2E8F0',
+                                }}
+                            />
+                            <Legend iconSize={10} wrapperStyle={{ fontSize: "12px", color: '#A0AEC0' }} />
+                        </PieChart>
+                    </ResponsiveContainer>
+                </div>
+                 {/* Stats */}
+                <div className="space-y-4">
+                  <div className="bg-gray-900/50 p-4 rounded-lg border border-gray-800">
+                      <p className="text-sm text-gray-400">Avg. Call Duration</p>
+                      <p className="text-2xl font-semibold">{reportData.agentPerformance.avg_call_duration_min} min</p>
+                  </div>
+                  <div className="bg-gray-900/50 p-4 rounded-lg border border-gray-800">
+                      <p className="text-sm text-gray-400">Total Calls (Q3)</p>
+                      <p className="text-2xl font-semibold">{reportData.agentPerformance.total_calls_q3}</p>
+                  </div>
+                </div>
+            </div>
+            <p className="text-gray-300 text-sm mt-6">
+              <strong>Summary:</strong> The  agent continues to perform with high efficacy, successfully managing the majority of outbound alerts. The low escalation rate of {reportData.agentPerformance.escalation_rate}% indicates a high level of autonomy and reliability. Call duration remains efficient, contributing to operational cost savings.
+            </p>
+          </section>
 
-      {/* Right Panel - Mapbox */}
-      <div className={`w-1/2 bg-black relative h-screen`}>
-        <div ref={mapContainerRef} className="absolute inset-0" style={{ height: '100%' }} />
+          <section>
+              <h2 className="text-xl font-semibold mb-4 border-b border-gray-800 pb-3">Environmental Impact</h2>
+              <p className="text-gray-300 mb-4">Based on observed compliance improvements and deterrence effects in the selected period, we estimate the following positive environmental outcomes. These estimates are illustrative and directionally conservative.</p>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                {/* Endangered fish saved (bar) */}
+                <div className="h-64">
+                  <ResponsiveContainer>
+                    <BarChart data={[{species:'Bluefin Tuna', saved: 140},{species:'Hammerhead Shark', saved: 90},{species:'Sea Turtles', saved: 60}] } margin={{ top: 5, right: 20, left: -10, bottom: 5 }}>
+                      <CartesianGrid strokeDasharray="3 3" stroke="#2D3748" />
+                      <XAxis dataKey="species" stroke="#A0AEC0" fontSize={12} />
+                      <YAxis stroke="#A0AEC0" fontSize={12} />
+                      <Tooltip contentStyle={{ backgroundColor: 'rgba(0,0,0,0.85)', borderColor: '#4A5568', color: '#E2E8F0' }} />
+                      <Bar dataKey="saved" fill="#E2E8F0" radius={[4,4,0,0]} />
+                    </BarChart>
+                  </ResponsiveContainer>
+                </div>
+                {/* Pollution avoided (area) */}
+                <div className="h-64">
+                  <ResponsiveContainer>
+                    <AreaChart data={[{t:'Wk 1', tons: 3.2},{t:'Wk 2', tons: 3.8},{t:'Wk 3', tons: 4.1},{t:'Wk 4', tons: 4.6}]} margin={{ top: 5, right: 20, left: -10, bottom: 5 }}>
+                      <defs>
+                        <linearGradient id="tons" x1="0" y1="0" x2="0" y2="1">
+                          <stop offset="5%" stopColor="#FFFFFF" stopOpacity={0.8}/>
+                          <stop offset="95%" stopColor="#FFFFFF" stopOpacity={0.1}/>
+                        </linearGradient>
+                      </defs>
+                      <CartesianGrid strokeDasharray="3 3" stroke="#2D3748" />
+                      <XAxis dataKey="t" stroke="#A0AEC0" fontSize={12} />
+                      <YAxis stroke="#A0AEC0" fontSize={12} />
+                      <Tooltip contentStyle={{ backgroundColor: 'rgba(0,0,0,0.85)', borderColor: '#4A5568', color: '#E2E8F0' }} />
+                      <Area type="monotone" dataKey="tons" stroke="#FFFFFF" fill="url(#tons)" />
+                    </AreaChart>
+                  </ResponsiveContainer>
+                </div>
+                {/* Prevention mix (pie) */}
+                <div className="h-64">
+                  <ResponsiveContainer>
+                    <PieChart>
+                      <Pie data={[{name:'Oil discharge prevented', value: 40},{name:'Illegal dumping deterred', value: 35},{name:'Bycatch reduction', value: 25}]} cx="50%" cy="50%" innerRadius={60} outerRadius={80} paddingAngle={5} dataKey="value">
+                        {['#FFFFFF','#A0AEC0','#4A5568'].map((c, i) => (<Cell key={i} fill={c} />))}
+                      </Pie>
+                      <Tooltip contentStyle={{ backgroundColor: 'rgba(0,0,0,0.85)', borderColor: '#4A5568', color: '#E2E8F0' }} />
+                      <Legend iconSize={10} wrapperStyle={{ fontSize: '12px', color: '#A0AEC0' }} />
+                    </PieChart>
+                  </ResponsiveContainer>
+                </div>
+              </div>
+            </section>
+        </div>
       </div>
-
-      {/* Center fade between chat and map (very subtle, non-interactive) */}
-      <div className="pointer-events-none absolute inset-y-0 left-1/2 -translate-x-1/2 w-12 bg-gradient-to-r from-transparent via-black/40 to-transparent" />
     </div>
   );
-}
+};
+
+export default ReportDisplayPage;

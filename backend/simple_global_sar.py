@@ -5,7 +5,7 @@ Collects SAR vessel data from Global Fishing Watch API using global GeoJSON poly
 """
 
 from dotenv import load_dotenv
-load_dotenv(".env")
+load_dotenv("backend/.env")
 
 import os
 import requests

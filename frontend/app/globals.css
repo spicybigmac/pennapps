@@ -95,10 +95,4 @@ body {
   top: 0; 
   left: 0; 
   z-index: 1100; 
-  transform: translateX(-95%);
-  transition: transform 0.2s ease-in-out ;
-}
-
-.sidebar:hover {
-  transform: translateX(0);
 }
