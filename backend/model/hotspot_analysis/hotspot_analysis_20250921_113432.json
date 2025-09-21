@@ -1,5 +1,5 @@
 {
-  "analysis_timestamp": "2025-09-21T11:10:09.665228",
+  "analysis_timestamp": "2025-09-21T11:34:32.919156",
   "time_range": {
     "start": null,
     "end": null
@@ -28,7 +28,7 @@
         "max_lon": -122.22272121579562
       },
       "nearby_tracked_count": 1,
-      "created_at": "2025-09-21T11:10:09.665153"
+      "created_at": "2025-09-21T11:34:32.919076"
     },
     {
       "id": "hotspot_2",
@@ -47,7 +47,7 @@
         "max_lon": -73.80574157903746
       },
       "nearby_tracked_count": 0,
-      "created_at": "2025-09-21T11:10:09.665175"
+      "created_at": "2025-09-21T11:34:32.919098"
     },
     {
       "id": "hotspot_3",
@@ -66,7 +66,7 @@
         "max_lon": 0.27264475197805516
       },
       "nearby_tracked_count": 0,
-      "created_at": "2025-09-21T11:10:09.665189"
+      "created_at": "2025-09-21T11:34:32.919114"
     },
     {
       "id": "hotspot_4",
@@ -85,7 +85,7 @@
         "max_lon": 151.40363982311308
       },
       "nearby_tracked_count": 1,
-      "created_at": "2025-09-21T11:10:09.665205"
+      "created_at": "2025-09-21T11:34:32.919130"
     },
     {
       "id": "hotspot_5",
@@ -104,7 +104,7 @@
         "max_lon": 139.94237354991984
       },
       "nearby_tracked_count": 1,
-      "created_at": "2025-09-21T11:10:09.665220"
+      "created_at": "2025-09-21T11:34:32.919147"
     }
   ],
   "statistics": {

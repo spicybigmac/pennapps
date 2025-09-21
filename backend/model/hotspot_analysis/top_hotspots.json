@@ -16,7 +16,7 @@
       "max_lon": -122.22272121579562
     },
     "nearby_tracked_count": 1,
-    "created_at": "2025-09-21T11:29:29.561494"
+    "created_at": "2025-09-21T11:39:41.798334"
   },
   {
     "id": "hotspot_2",
@@ -35,7 +35,7 @@
       "max_lon": -73.80574157903746
     },
     "nearby_tracked_count": 0,
-    "created_at": "2025-09-21T11:29:29.561516"
+    "created_at": "2025-09-21T11:39:41.798354"
   },
   {
     "id": "hotspot_3",
@@ -54,7 +54,7 @@
       "max_lon": 0.27264475197805516
     },
     "nearby_tracked_count": 0,
-    "created_at": "2025-09-21T11:29:29.561528"
+    "created_at": "2025-09-21T11:39:41.798369"
   },
   {
     "id": "hotspot_4",
@@ -73,7 +73,7 @@
       "max_lon": 151.40363982311308
     },
     "nearby_tracked_count": 1,
-    "created_at": "2025-09-21T11:29:29.561540"
+    "created_at": "2025-09-21T11:39:41.798383"
   },
   {
     "id": "hotspot_5",
@@ -92,6 +92,6 @@
       "max_lon": 139.94237354991984
     },
     "nearby_tracked_count": 1,
-    "created_at": "2025-09-21T11:29:29.561552"
+    "created_at": "2025-09-21T11:39:41.798397"
   }
 ]

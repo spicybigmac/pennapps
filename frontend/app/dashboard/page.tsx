@@ -601,16 +601,16 @@ const HomePage: React.FC = () => {
       <div
         style={{
           position: 'fixed',
-          right: '20px',
-          top: '50%',
-          transform: 'translateY(-50%)',
+          right: '20px', // Move to top right corner
+          top: '20px',   // Move to top right corner
+          transform: 'none', // Remove translateY
           backgroundColor: 'rgba(0, 0, 0, 0.8)',
           color: 'white',
           padding: '20px',
           borderRadius: '15px',
           boxShadow: '0 4px 20px rgba(0, 0, 0, 0.5)',
           zIndex: 1000,
-          maxWidth: '250px',
+          maxWidth: '300px', // Make the window wider
           display: 'flex',
           flexDirection: 'column',
           gap: '15px',
@@ -655,6 +655,20 @@ const HomePage: React.FC = () => {
           </label>
         </div>
         {/* End new toggle button */}
+
+        {/* Stats below filter options */}
+        <div style={{ borderTop: '1px solid rgba(255, 255, 255, 0.2)', paddingTop: '15px', marginTop: '10px' }}>
+          <div style={{ marginBottom: '8px', fontSize: '0.9em' }}>
+            <strong>Total Vessels:</strong> {vesselData.length}
+          </div>
+          <div style={{ marginBottom: '8px', fontSize: '0.9em' }}>
+            <strong>Total Unregistered Vessels:</strong> {vesselData.filter(v => !v.registered).length}
+          </div>
+          <div style={{ fontSize: '0.9em' }}>
+            <strong>% Unregistered:</strong> {vesselData.length > 0 ? ((vesselData.filter(v => !v.registered).length / vesselData.length) * 100).toFixed(2) : '0.00'}%
+          </div>
+        </div>
+        {/* End Stats */}
 
         <button
           onClick={() => {
